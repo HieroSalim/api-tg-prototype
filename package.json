@@ -1,0 +1,18 @@
+{
+  "name": "prototype-api",
+  "version": "1.0.0",
+  "description": "Protótipo API banco TG",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "API",
+    "TG"
+  ],
+  "author": "Hiero Salim",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
