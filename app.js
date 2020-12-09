@@ -6,6 +6,7 @@ const cors = require('cors');
 
 //rotas
 const rotaUser = require('./routes/users');
+const rotaAppointment = require('./routes/appointments');
 
 app.use(cors());
 app.use(morgan('dev'));
@@ -26,6 +27,8 @@ app.use((req, res, next) =>{
 })
 
 app.use('/user', rotaUser);
+
+app.use('/appointment', rotaAppointment);
 
 app.use((req, res, next) => {
     res.status(404).send({
