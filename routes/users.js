@@ -10,7 +10,13 @@ router.get('/', (req, res, next) => {
             'SELECT * FROM User;',
             (error, resultado, fields) => {
                 if(error) { return res.status(500).send({error : error})}
-                return res.status(200).send({response: resultado})
+                else if (resultado.length > 0){
+                    return res.status(200).send({response: resultado})
+                }else{
+                    res.status(404).send({                    
+                        menssagem: 'Nenhum dado Inserido'
+                    });
+                }
             }
         )
     });
@@ -25,7 +31,13 @@ router.get('/:CPF', (req, res, next) => {
             [req.params.CPF],
             (error, resultado, fields) => {
                 if(error) { return res.status(500).send({error : error})}
-                return res.status(200).send({response: resultado})
+                else if (resultado.length > 0){
+                    return res.status(200).send({response: resultado})
+                }else{
+                    res.status(404).send({                    
+                        menssagem: 'Não há um usuário cadastrado com este CPF'
+                    });
+                }
             }
         )
     });

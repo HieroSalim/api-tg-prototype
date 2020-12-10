@@ -7,10 +7,16 @@ router.get('/', (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if (error) { return res.status(500).send({error : error})}
         conn.query(
-            'SELECT * FROM Appointments;',
+            'SELECT * FROM Appointment;',
             (error, resultado, fields) => {
                 if(error) { return res.status(500).send({error : error})}
-                return res.status(200).send({response: resultado})
+                else if (resultado.length > 0){
+                    return res.status(200).send({response: resultado})
+                }else{
+                    res.status(404).send({                    
+                        menssagem: 'Nenhum dado Inserido'
+                    });
+                }
             }
         )
     });
@@ -21,11 +27,17 @@ router.get('/:idConsult', (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if (error) { return res.status(500).send({error : error})}
         conn.query(
-            'SELECT * FROM User WHERE idConsult = ?;',
+            'SELECT * FROM Appointment WHERE idConsult = ?;',
             [req.params.idConsult],
             (error, resultado, fields) => {
                 if(error) { return res.status(500).send({error : error})}
-                return res.status(200).send({response: resultado})
+                else if (resultado.length > 0){
+                    return res.status(200).send({response: resultado})
+                }else{
+                    res.status(404).send({                    
+                        menssagem: 'Esse identificador não está sendo utilizado'
+                    });
+                }
             }
         )
     });
@@ -36,8 +48,8 @@ router.post('/', (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if (error) { return res.status(500).send({error : error})}
         conn.query(
-            'INSERT INTO Appointments (idConsult, user_CPF, symptons, description, dateHour, doctor, statusDoctor, Appointmentcol) VALUES (?,?,?,?,?,?,?,?)',
-            [req.body.idConsult, req.body.user_CPF, req.body.symptons, req.body.description, req.body.dateHour, req.body.doctor, req.body.statusDoctor, req.body.Appointmentcol],
+            'INSERT INTO Appointment (idConsult, user_CPF, symptons, description, dateHour, doctor, statusDoctor) VALUES (?,?,?,?,?,?,?)',
+            [req.body.idConsult, req.body.user_CPF, req.body.symptons, req.body.description, req.body.dateHour, req.body.doctor, req.body.statusDoctor],
             (error, resultado, field) =>{
                 conn.release();
                 if(error) { return res.status(500).send({error : error})}
@@ -56,14 +68,13 @@ router.patch('/', (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if (error) { return res.status(500).send({error : error})}
         conn.query(
-            `UPDATE Appointments
+            `UPDATE Appointment
                 SET user_CPF    = ?,
                     symptons = ?,
                     description    = ?,
                     dateHour    = ?,
                     doctor    = ?,
                     statusDoctor = ?,
-                    Appointmentcol = ?
              WHERE idConsult     = ?
             `,
             [    req.body.user_CPF,
@@ -72,7 +83,6 @@ router.patch('/', (req, res, next) => {
                  req.body.dateHour,
                  req.body.doctor,
                  req.body.statusDoctor,
-                 req.body.Appointmentcol,
                  req.body.idConsult
             ],
             (error, resultado, field) =>{
@@ -92,7 +102,7 @@ router.delete('/', (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if (error) { return res.status(500).send({error : error})}
         conn.query(
-            `DElETE FROM Appointments WHERE idConsult = ?`, [req.body.idConsult],
+            `DElETE FROM Appointment WHERE idConsult = ?`, [req.body.idConsult],
             (error, resultado, field) =>{
                 conn.release();
                 if(error) { return res.status(500).send({error : error})}
