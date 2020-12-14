@@ -48,17 +48,28 @@ router.post('/', (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if (error) { return res.status(500).send({error : error})}
         conn.query(
-            'INSERT INTO User (CPF, user, pass, typeUser, name, email, cell) VALUES (?,?,?,?,?,?,?)',
-            [req.body.CPF, req.body.user, req.body.pass, req.body.typeUser, req.body.name, req.body.email, req.body.cell],
-            (error, resultado, field) =>{
-                conn.release();
-                if(error) { return res.status(500).send({error : error})}
-                res.status(201).send({
-                    menssagem: 'Cadastrado com sucesso!',
-                    CPF: resultado.InsertCPF
-                });
-            }
-        )
+            'SELECT * FROM User WHERE user = ?;',
+            [req.body.user],
+            (error, resultado, fields) => {
+                if(resultado == 0){
+                    conn.query(
+                        'INSERT INTO User (CPF, user, pass, typeUser, name, email, cell) VALUES (?,?,?,?,?,?,?)',
+                        [req.body.CPF, req.body.user, req.body.pass, req.body.typeUser, req.body.name, req.body.email, req.body.cell],
+                        (error, resultado, field) =>{
+                        conn.release();
+                        if(error) { return res.status(500).send({error : error})}
+                        res.status(201).send({
+                            menssagem: 'Cadastrado com sucesso!',
+                            CPF: resultado.InsertCPF
+                        });
+                        }
+                    )  
+                }
+                else{
+                    return res.status(500).send({menssagem: " Usuário já existente no sistema!"})
+                   
+                }
+            })
     });
 });
 

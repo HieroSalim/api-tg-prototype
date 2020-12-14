@@ -2,21 +2,16 @@ const express = require('express');
 const router = express.Router();
 const mysql = require('../mysql').pool;
 
+
 //Busca geral
 router.get('/', (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if (error) { return res.status(500).send({error : error})}
         conn.query(
-            'SELECT * FROM Appointment;',
+            'SELECT * FROM Appointments;',
             (error, resultado, fields) => {
                 if(error) { return res.status(500).send({error : error})}
-                else if (resultado.length > 0){
-                    return res.status(200).send({response: resultado})
-                }else{
-                    res.status(404).send({                    
-                        menssagem: 'Nenhum dado Inserido'
-                    });
-                }
+                return res.status(200).send({response: resultado})
             }
         )
     });
@@ -27,17 +22,11 @@ router.get('/:idConsult', (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if (error) { return res.status(500).send({error : error})}
         conn.query(
-            'SELECT * FROM Appointment WHERE idConsult = ?;',
+            'SELECT * FROM Appointments WHERE idConsult = ?;',
             [req.params.idConsult],
             (error, resultado, fields) => {
                 if(error) { return res.status(500).send({error : error})}
-                else if (resultado.length > 0){
-                    return res.status(200).send({response: resultado})
-                }else{
-                    res.status(404).send({                    
-                        menssagem: 'Esse identificador não está sendo utilizado'
-                    });
-                }
+                return res.status(200).send({response: resultado})
             }
         )
     });
@@ -47,34 +36,34 @@ router.get('/:idConsult', (req, res, next) => {
 router.post('/', (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if (error) { return res.status(500).send({error : error})}
-        conn.query(
-            'INSERT INTO Appointment (idConsult, user_CPF, symptons, description, dateHour, doctor, statusDoctor) VALUES (?,?,?,?,?,?,?)',
-            [req.body.idConsult, req.body.user_CPF, req.body.symptons, req.body.description, req.body.dateHour, req.body.doctor, req.body.statusDoctor],
-            (error, resultado, field) =>{
-                conn.release();
-                if(error) { return res.status(500).send({error : error})}
-                res.status(201).send({
-                    menssagem: 'Cadastrado com sucesso!',
-                    idConsult: resultado.InsertidConsult
-                });
-            }
-        )
-    });
+            conn.query(   
+                    'INSERT INTO Appointments (idConsult, user_CPF, symptons, description, dateHour, doctor, statusDoctor, Appointmentcol) VALUES (?,?,?,?,?,?,?,?)',
+                    [req.body.idConsult, req.body.user_CPF, req.body.symptons, req.body.description, req.body.dateHour, req.body.doctor, req.body.statusDoctor, req.body.Appointmentcol],
+                    (error, resultado, field) =>{
+                        conn.release();
+                        if(error) { return res.status(500).send({error : error})}
+                        res.status(201).send({
+                            menssagem: 'Cadastrado com sucesso!',
+                            idConsult: resultado.InsertidConsult
+                        });
+                    }
+            )
+        });
 });
-
 
 //Altera uma consulta
 router.patch('/', (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if (error) { return res.status(500).send({error : error})}
         conn.query(
-            `UPDATE Appointment
+            `UPDATE Appointments
                 SET user_CPF    = ?,
                     symptons = ?,
                     description    = ?,
                     dateHour    = ?,
                     doctor    = ?,
                     statusDoctor = ?,
+                    Appointmentcol = ?
              WHERE idConsult     = ?
             `,
             [    req.body.user_CPF,
@@ -83,6 +72,7 @@ router.patch('/', (req, res, next) => {
                  req.body.dateHour,
                  req.body.doctor,
                  req.body.statusDoctor,
+                 req.body.Appointmentcol,
                  req.body.idConsult
             ],
             (error, resultado, field) =>{
@@ -102,7 +92,7 @@ router.delete('/', (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if (error) { return res.status(500).send({error : error})}
         conn.query(
-            `DElETE FROM Appointment WHERE idConsult = ?`, [req.body.idConsult],
+            `DElETE FROM Appointments WHERE idConsult = ?`, [req.body.idConsult],
             (error, resultado, field) =>{
                 conn.release();
                 if(error) { return res.status(500).send({error : error})}
