@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mysql = require('../mysql').pool;
+const bcrypt = require('bcrypt');
 
 //Busca geral
 router.get('/', (req, res, next) => {
@@ -52,20 +53,24 @@ router.post('/', (req, res, next) => {
             [req.body.user],
             (error, resultado, fields) => {
                 if(resultado == 0){
-                    conn.query(
-                        'INSERT INTO User (CPF, user, pass, typeUser, name, email, cell) VALUES (?,?,?,?,?,?,?)',
-                        [req.body.CPF, req.body.user, req.body.pass, req.body.typeUser, req.body.name, req.body.email, req.body.cell],
-                        (error, resultado, field) =>{
-                        conn.release();
-                        if(error) { return res.status(500).send({error : error})}
-                        res.status(201).send({
-                            menssagem: 'Cadastrado com sucesso!',
-                            CPF: resultado.InsertCPF
-                        });
-                        }
-                    )  
+                    bcrypt.hash(req.body.pass, 10 ,(errBcrypt, hash) => {
+                        if(errBcrypt) { return res.status(500).send({ error : errBcrypt})}
+                        conn.query(
+                            'INSERT INTO User (CPF, user, pass, typeUser, name, email, cell) VALUES (?,?,?,?,?,?,?)',
+                            [req.body.CPF, req.body.user, hash, req.body.typeUser, req.body.name, req.body.email, req.body.cell],
+                            (error, resultado, field) =>{
+                            conn.release();
+                            if(error) { return res.status(500).send({error : error})}
+                            res.status(201).send({
+                                menssagem: 'Cadastrado com sucesso!',
+                                CPF: resultado.InsertCPF
+                            });
+                            }
+                        )
+                    })                      
                 }
                 else{
+                    conn.release();
                     return res.status(500).send({menssagem: " Usuário já existente no sistema!"})
                    
                 }
@@ -77,25 +82,31 @@ router.post('/Authentication', (req, res, next) =>{
     mysql.getConnection((error, conn) =>{
         if (error) { return res.status(500).send({error : error})} 
             conn.query(
-                'SELECT CPF, user, pass, typeUser from User WHERE user = ? and pass = ?',
-                [req.body.user, req.body.pass],
-                (error ,resultado, field) =>{
+                'SELECT CPF, user, pass, typeUser from User WHERE user = ? or email = ?',
+                [req.body.login, req.body.login],
+                (error ,resultados, field) =>{
                     conn.release();
                     if(error) { return res.status(500).send({error : error})}
-                    else if (resultado.length > 0){
-                        if (resultado[0].user == req.body.user && resultado[0].pass == req.body.pass) {
-                            res.status(201).send({             
-                                user : resultado[0].user,
-                                pass : resultado[0].pass,       
-                                typeUser: resultado[0].typeUser,
-                                CPF: resultado[0].CPF
-                            });       
-                        }
+                    if(resultados.length > 0){
+                        bcrypt.compare(req.body.pass, resultados[0].pass.toString(), (error, resultado) =>{
+                            if(error) { return res.status(500).send({error : error})}
+                            if (resultado){
+                                res.status(202).send({             
+                                    user : resultados[0].user,
+                                    typeUser: resultados[0].typeUser,
+                                    CPF: resultados[0].CPF
+                                });       
+                            }else{
+                                res.status(401).send({                    
+                                    menssagem: 'Usuário ou senha incorretos'
+                                });
+                            }                            
+                        })
                     }else{
-                        res.status(404).send({                    
+                        res.status(401).send({                    
                             menssagem: 'Usuário ou senha incorretos'
                         });
-                    }
+                    }                    
                 }
             )
     });
