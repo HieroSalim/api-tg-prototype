@@ -8,6 +8,7 @@ const bcrypt = require('bcrypt');
 //rotas
 const rotaUser = require('./routes/users');
 const rotaAppointment = require('./routes/appointments');
+const rotaAuth = require('./routes/auth');
 
 app.use(cors());
 app.use(morgan('dev'));
@@ -26,6 +27,8 @@ app.use((req, res, next) =>{
     }
     next();
 })
+
+app.use('/authentication', rotaAuth);
 
 app.use('/user', rotaUser);
 
