@@ -6,6 +6,8 @@
         "MYSQL_HOST" : "localhost",
         "MYSQL_PORT" : 3306,
 
-        "JWT_KEY" : "dinoco95"
+        "JWT_KEY" : "dinoco95",
+        "ENCRYPT_KEY" : "Katchau95",
+        "ENCRYPT_TYPE" : 512
     }
 }

@@ -5,7 +5,7 @@ const jwt = require('../middleware/jwt')
 const UserController = require('../controllers/userController')
 
 //Busca geral
-router.get('/', jwt, UserController.getAll);
+router.get('/', UserController.getAll);
 
 //Busca um user específico
 router.get('/:CPF', jwt , UserController.getUnique);

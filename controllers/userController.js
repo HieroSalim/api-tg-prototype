@@ -5,11 +5,11 @@ exports.getAll = (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if (error) { return res.status(500).send({error : error})}
         conn.query(
-            'SELECT * FROM User;',
+            "SELECT aes_decrypt(name,sha2('Katchau95',512)) as name FROM User;",
             (error, resultado, fields) => {
                 if(error) { return res.status(500).send({error : error})}
                 else if (resultado.length > 0){
-                    return res.status(200).send({response: resultado})
+                    return res.status(200).send({response: resultado[0].name.toString()})
                 }else{
                     res.status(404).send({                    
                         menssagem: 'Nenhum dado Inserido'
@@ -51,10 +51,11 @@ exports.register = (req, res, next) => {
                     bcrypt.hash(req.body.pass, 10 ,(errBcrypt, hash) => {
                         if(errBcrypt) { return res.status(500).send({ error : errBcrypt})}
                         conn.query(
-                            'INSERT INTO User (CPF, user, pass, typeUser, name, email, cell) VALUES (?,?,?,?,?,?,?)',
+                            'INSERT INTO User (CPF, user, pass, typeUser, name, email, cell) VALUES (AES_ENCRYPT(?,SHA2("'+process.env.ENCRYPT_KEY+'",'+process.env.ENCRYPT_TYPE+')),AES_ENCRYPT(?,SHA2("'+process.env.ENCRYPT_KEY+'",'+process.env.ENCRYPT_TYPE+')),AES_ENCRYPT(?,SHA2("'+process.env.ENCRYPT_KEY+'",'+process.env.ENCRYPT_TYPE+')),?,AES_ENCRYPT(?,SHA2("'+process.env.ENCRYPT_KEY+'",'+process.env.ENCRYPT_TYPE+')),AES_ENCRYPT(?,SHA2("'+process.env.ENCRYPT_KEY+'",'+process.env.ENCRYPT_TYPE+')),AES_ENCRYPT(?,SHA2("'+process.env.ENCRYPT_KEY+'",'+process.env.ENCRYPT_TYPE+')))',
                             [req.body.CPF, req.body.user, hash, req.body.typeUser, req.body.name, req.body.email, req.body.cell],
                             (error, resultado, field) =>{
                             conn.release();
+                            console.log('INSERT INTO User (CPF, user, pass, typeUser, name, email, cell) VALUES (AES_ENCRYPT(?,SHA2("'+process.env.ENCRYPT_KEY+'",'+process.env.ENCRYPT_TYPE+')),AES_ENCRYPT(?,SHA2("'+process.env.ENCRYPT_KEY+'",'+process.env.ENCRYPT_TYPE+')),AES_ENCRYPT(?,SHA2("'+process.env.ENCRYPT_KEY+'",'+process.env.ENCRYPT_TYPE+')),?,AES_ENCRYPT(?,SHA2("'+process.env.ENCRYPT_KEY+'",'+process.env.ENCRYPT_TYPE+')),AES_ENCRYPT(?,SHA2("'+process.env.ENCRYPT_KEY+'",'+process.env.ENCRYPT_TYPE+')),AES_ENCRYPT(?,SHA2("'+process.env.ENCRYPT_KEY+'",'+process.env.ENCRYPT_TYPE+')))')
                             if(error) { return res.status(500).send({error : error})}
                             res.status(201).send({
                                 menssagem: 'Cadastrado com sucesso!',
