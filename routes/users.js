@@ -8,10 +8,10 @@ const UserController = require('../controllers/userController')
 router.get('/', UserController.getAll);
 
 //Busca um user específico
-router.get('/:CPF', jwt , UserController.getUnique);
+router.get('/:CPF', jwt, UserController.getUnique);
 
 //Cadastra um user
-router.post('/', UserController.register);
+router.post('/',jwt, UserController.register);
 
 //Altera um user
 router.patch('/', jwt, UserController.alter);
