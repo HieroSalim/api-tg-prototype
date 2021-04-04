@@ -5,8 +5,11 @@ const mysql = require('../mysql').pool;
 exports.auth = (req, res, next) =>{
     mysql.getConnection((error, conn) =>{
         if (error) { return res.status(500).send({error : error})} 
+        const key = process.env.ENCRYPT_KEY
+        const type = process.env.ENCRYPT_TYPE
             conn.query(
-                'SELECT CPF, user, pass, typeUser from User WHERE user = ? or email = ?',
+                'SELECT CPF, user, pass, typeUser from User WHERE user = AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))'
+                +' or email = AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))',
                 [req.body.login, req.body.login],
                 (error ,resultados, field) =>{
                     conn.release();
@@ -48,14 +51,14 @@ exports.loadsession = (req,res,next) => {
             const key = process.env.ENCRYPT_KEY
             const type = process.env.ENCRYPT_TYPE
             conn.query(
-                'SELECT AES_DECRYPT(name,SHA2('+key+','+type+'))'+
-                +', AES_DECRYPT(user,SHA2('+key+','+type+'))'+
-                +', typeUser, AES_DECRYPT(email,SHA2('+key+','+type+'))'+
-                +' from User WHERE user = ?',
-                req.user.user,
+                'SELECT AES_DECRYPT(name,SHA2("'+key+'",'+type+')) as name'
+                +', AES_DECRYPT(user,SHA2("'+key+'",'+type+')) as user'
+                +', typeUser, AES_DECRYPT(email,SHA2("'+key+'",'+type+')) as email'
+                +' from User WHERE user = AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))',
+                [req.body.user],
                 (err,result,field) => {
-                    if(err) { return res.status(500).send({ error: error }) }
-                    if(result > 0){
+                    if(err) { return res.status(500).send({ error: err }) }
+                    if(result.length > 0){
                         return res.status(200).send({ 
                             user: result[0].user.toString(),
                             typeUser: result[0].typeUser,

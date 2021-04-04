@@ -7,10 +7,31 @@ exports.all = (req, res, next) => {
         const key = process.env.ENCRYPT_KEY
         const type = process.env.ENCRYPT_TYPE
         conn.query(
-            'SELECT * FROM Appointments;',
+            'SELECT idAppointment, AES_DECRYPT(user_CPF, SHA2("'+key+'",'+type+')) as user_CPF, AES_DECRYPT(symptoms, SHA2("'+key+'",'+type+')) as symptoms,'
+            +' AES_DECRYPT(description, SHA2("'+key+'",'+type+')) as description, dateHour, doctors, statusDoctor FROM Appointment;',
             (error, resultado, fields) => {
                 if(error) { return res.status(500).send({error : error})}
-                return res.status(200).send({response: resultado})
+                else if(resultado.length > 0){
+                    var data = []
+                    resultado.forEach(dado => {
+                        data.push( {
+                            idAppointment: dado.idAppointment,
+                            user_CPF: dado.user_CPF.toString(),
+                            symptoms: dado.symptoms.toString(),
+                            description: dado.description.toString(),
+                            dateHour: dado.dateHour,
+                            doctors: dado.doctors,
+                            statusDoctor: dado.statusDoctor
+                        })
+                    });
+                    return res.status(200).send({
+                        dado: data
+                    })
+                }else{
+                    res.status(404).send({                    
+                        menssagem: 'Nenhum dado Inserido'
+                    });
+                }
             }
         )
     });
@@ -22,11 +43,26 @@ exports.unique = (req, res, next) => {
         const key = process.env.ENCRYPT_KEY
         const type = process.env.ENCRYPT_TYPE
         conn.query(
-            'SELECT * FROM Appointments WHERE idConsult = ?;',
-            [req.params.idConsult],
+            'SELECT idAppointment, AES_DECRYPT(user_CPF, SHA2("'+key+'",'+type+')) as user_CPF, AES_DECRYPT(symptoms, SHA2("'+key+'",'+type+')) as symptoms,'
+            +' AES_DECRYPT(description, SHA2("'+key+'",'+type+')) as description, dateHour, doctors, statusDoctor  FROM Appointment WHERE idAppointment = ?;',
+            [req.params.idAppointment],
             (error, resultado, fields) => {
                 if(error) { return res.status(500).send({error : error})}
-                return res.status(200).send({response: resultado})
+                else if(resultado.length > 0){
+                    return res.status(200).send({ 
+                        idAppointment: resultado[0].idAppointment,
+                        user_CPF: resultado[0].user_CPF.toString(),
+                        symptoms: resultado[0].symptoms.toString(),
+                        description: resultado[0].description.toString(),
+                        dateHour: resultado[0].dateHour,
+                        doctors: resultado[0].doctors,
+                        statusDoctor: resultado[0].statusDoctor
+                    })
+                }else{
+                    res.status(404).send({                    
+                        menssagem: 'Não encontrado'
+                    });
+                }                
             }
         )
     });
@@ -38,17 +74,16 @@ exports.register = (req, res, next) => {
             const key = process.env.ENCRYPT_KEY
             const type = process.env.ENCRYPT_TYPE
             conn.query(   
-                    'INSERT INTO Appointments (user_CPF, symptons, description, dateHour, doctor, statusDoctor)'+
-                    +' VALUES (AES_ENCRYPT(?,SHA2("'+key+'",'+type+')),AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))'+
-                    +',AES_ENCRYPT(?,SHA2("'+key+'",'+type+')),AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))'+
-                    +',AES_ENCRYPT(?,SHA2("'+key+'",'+type+')),AES_ENCRYPT(?,SHA2("'+key+'",'+type+')),',
-                    [req.body.user_CPF, req.body.symptons, req.body.description, req.body.dateHour, req.body.doctor, req.body.statusDoctor],
+                    'INSERT INTO Appointment (user_CPF, symptoms, description, dateHour, doctors, statusDoctor)'
+                    +' VALUES (AES_ENCRYPT(?,SHA2("'+key+'",'+type+')),AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))'
+                    +',AES_ENCRYPT(?,SHA2("'+key+'",'+type+')),?,?,?)',
+                    [req.body.user_CPF, req.body.symptoms, req.body.description, req.body.dateHour, req.body.doctors, req.body.statusDoctor],
                     (error, resultado, field) =>{
                         conn.release();
                         if(error) { return res.status(500).send({error : error})}
                         res.status(201).send({
                             menssagem: 'Cadastrado com sucesso!',
-                            idConsult: resultado.InsertidConsult
+                            idAppointment: resultado.InsertidAppointment
                         });
                     }
             )
@@ -58,24 +93,25 @@ exports.register = (req, res, next) => {
 exports.alter = (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if (error) { return res.status(500).send({error : error})}
+        const key = process.env.ENCRYPT_KEY
+        const type = process.env.ENCRYPT_TYPE
         conn.query(
-            `UPDATE Appointments
+            `UPDATE Appointment
                 SET user_CPF    = AES_ENCRYPT(?,SHA2("`+key+`",`+type+`)),
-                    symptons = AES_ENCRYPT(?,SHA2("`+key+`",`+type+`)),
+                    symptoms = AES_ENCRYPT(?,SHA2("`+key+`",`+type+`)),
                     description    = AES_ENCRYPT(?,SHA2("`+key+`",`+type+`)),
                     dateHour    = ?,
-                    doctor    = ?,
+                    doctors    = ?,
                     statusDoctor = ?
-             WHERE idConsult     = ?
+             WHERE idAppointment     = ?
             `,
             [    req.body.user_CPF,
-                 req.body.symptons,
+                 req.body.symptoms,
                  req.body.description,
                  req.body.dateHour,
-                 req.body.doctor,
+                 req.body.doctors,
                  req.body.statusDoctor,
-                 req.body.Appointmentcol,
-                 req.body.idConsult
+                 req.body.idAppointment
             ],
             (error, resultado, field) =>{
                 conn.release();
@@ -93,13 +129,13 @@ exports.delete = (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if (error) { return res.status(500).send({error : error})}
         conn.query(
-            `DElETE FROM Appointments WHERE idConsult = ?`, [req.body.idConsult],
+            `DElETE FROM Appointment WHERE idAppointment = ?`, [req.body.idAppointment],
             (error, resultado, field) =>{
                 conn.release();
                 if(error) { return res.status(500).send({error : error})}
 
                 res.status(202).send({
-                    menssagem: 'Consulta excluída!',
+                    menssagem: 'Agendamento excluído!',
                 });
             }
         )

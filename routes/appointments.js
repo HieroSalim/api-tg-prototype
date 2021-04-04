@@ -1,20 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const appointmentController = require('../controllers/appointmentController')
+const jwt = require('../middleware/jwt')
 
 //Busca geral
-router.get('/', appointmentController.all);
+router.get('/', jwt, appointmentController.all);
 
 //Buscar uma consulta especifica
-router.get('/:idConsult', appointmentController.unique);
+router.get('/:idAppointment', jwt, appointmentController.unique);
 
 //Cadastra uma consulta
-router.post('/', appointmentController.register);
+router.post('/', jwt, appointmentController.register);
 
 //Altera uma consulta
-router.patch('/', appointmentController.alter);
+router.patch('/', jwt, appointmentController.alter);
 
 //Apaga uma consulta
-router.delete('/', appointmentController.delete);
+router.delete('/', jwt, appointmentController.delete);
 
 module.exports = router;

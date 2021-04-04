@@ -5,6 +5,6 @@ const jwt = require('../middleware/jwt')
 
 router.post('/', authController.auth);
 
-router.get('/loadsession', jwt, authController.auth)
+router.get('/loadsession', jwt, authController.loadsession)
 
 module.exports = router

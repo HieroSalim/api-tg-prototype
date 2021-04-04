@@ -5,13 +5,13 @@ const jwt = require('../middleware/jwt')
 const UserController = require('../controllers/userController')
 
 //Busca geral
-router.get('/', UserController.getAll);
+router.get('/', jwt, UserController.getAll);
 
 //Busca um user específico
 router.get('/:CPF', jwt, UserController.getUnique);
 
 //Cadastra um user
-router.post('/',jwt, UserController.register);
+router.post('/', UserController.register);
 
 //Altera um user
 router.patch('/', jwt, UserController.alter);
