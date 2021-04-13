@@ -10,8 +10,8 @@ router.get('/', jwt, DoctorController.getAll);
 router.get('/:CPF', jwt, DoctorController.getUnique);
 
 //Cadastra um doctor
-router.post('/', DoctorController.upMedic);
-
+router.post('/', jwt, DoctorController.upMedic);
+ 
 //Altera um doctor
 router.patch('/', jwt, DoctorController.alter);
 

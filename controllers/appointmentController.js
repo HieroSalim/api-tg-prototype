@@ -10,6 +10,7 @@ exports.all = (req, res, next) => {
             'SELECT idAppointment, AES_DECRYPT(user_CPF, SHA2("'+key+'",'+type+')) as user_CPF, AES_DECRYPT(symptoms, SHA2("'+key+'",'+type+')) as symptoms,'
             +' AES_DECRYPT(description, SHA2("'+key+'",'+type+')) as description, dateHour, doctors, statusDoctor FROM Appointment;',
             (error, resultado, fields) => {
+                conn.release()
                 if(error) { return res.status(500).send({error : error})}
                 else if(resultado.length > 0){
                     var data = []
@@ -29,7 +30,7 @@ exports.all = (req, res, next) => {
                     })
                 }else{
                     res.status(404).send({                    
-                        menssagem: 'Nenhum dado Inserido'
+                        mensagem: 'Nenhum dado Inserido'
                     });
                 }
             }
@@ -47,6 +48,7 @@ exports.unique = (req, res, next) => {
             +' AES_DECRYPT(description, SHA2("'+key+'",'+type+')) as description, dateHour, doctors, statusDoctor  FROM Appointment WHERE idAppointment = ?;',
             [req.params.idAppointment],
             (error, resultado, fields) => {
+                conn.release()
                 if(error) { return res.status(500).send({error : error})}
                 else if(resultado.length > 0){
                     return res.status(200).send({ 
@@ -60,7 +62,7 @@ exports.unique = (req, res, next) => {
                     })
                 }else{
                     res.status(404).send({                    
-                        menssagem: 'Não encontrado'
+                        mensagem: 'Não encontrado'
                     });
                 }                
             }
@@ -82,8 +84,8 @@ exports.register = (req, res, next) => {
                         conn.release();
                         if(error) { return res.status(500).send({error : error})}
                         res.status(201).send({
-                            menssagem: 'Cadastrado com sucesso!',
-                            idAppointment: resultado.InsertidAppointment
+                            mensagem: 'Cadastrado com sucesso!',
+                            idAppointment: resultado.InsertIdAppointment
                         });
                     }
             )
@@ -117,8 +119,8 @@ exports.alter = (req, res, next) => {
                 conn.release();
                 if(error) { return res.status(500).send({error : error})}
 
-                res.status(202).send({
-                    menssagem: 'Alterado com Sucesso!',
+                res.status(200).send({
+                    mensagem: 'Alterado com Sucesso!',
                 });
             }
         )
@@ -134,8 +136,8 @@ exports.delete = (req, res, next) => {
                 conn.release();
                 if(error) { return res.status(500).send({error : error})}
 
-                res.status(202).send({
-                    menssagem: 'Agendamento excluído!',
+                res.status(200).send({
+                    mensagem: 'Agendamento excluído!',
                 });
             }
         )

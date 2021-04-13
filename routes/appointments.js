@@ -6,16 +6,16 @@ const jwt = require('../middleware/jwt')
 //Busca geral
 router.get('/', jwt, appointmentController.all);
 
-//Buscar uma consulta especifica
+//Buscar um agendamento especifico
 router.get('/:idAppointment', jwt, appointmentController.unique);
 
-//Cadastra uma consulta
+//Cadastra um agendamento
 router.post('/', jwt, appointmentController.register);
 
-//Altera uma consulta
+//Altera um agendamento
 router.patch('/', jwt, appointmentController.alter);
 
-//Apaga uma consulta
+//Apaga um agendamento
 router.delete('/', jwt, appointmentController.delete);
 
 module.exports = router;

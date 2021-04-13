@@ -37,7 +37,7 @@ exports.auth = (req, res, next) =>{
                         })
                     }else{
                         res.status(401).send({                    
-                            menssagem: 'Usuário ou senha incorretos'
+                            mensagem: 'Usuário ou senha incorretos'
                         });
                     }                    
                 }
@@ -57,6 +57,7 @@ exports.loadsession = (req,res,next) => {
                 +' from User WHERE user = AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))',
                 [req.body.user],
                 (err,result,field) => {
+                    conn.release()
                     if(err) { return res.status(500).send({ error: err }) }
                     if(result.length > 0){
                         return res.status(200).send({ 

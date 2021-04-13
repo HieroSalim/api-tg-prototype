@@ -7,6 +7,7 @@ exports.getAll = (req, res, next) => {
         conn.query(
             "SELECT AES_DECRYPT(CPF, SHA2('Katchau95', 512)) as CPF, AES_DECRYPT(user, SHA2('Katchau95', 512)) as user, typeUser, AES_DECRYPT(name, SHA2('Katchau95', 512)) as name, AES_DECRYPT(email, SHA2('Katchau95', 512)) as email, AES_DECRYPT(cell, SHA2('Katchau95', 512)) as cell FROM User;",
             (error, resultado, fields) => {
+                conn.release()
                 if(error) { return res.status(500).send({error : error})}
                 else if (resultado.length > 0){
                     var data = []
@@ -24,7 +25,7 @@ exports.getAll = (req, res, next) => {
                         dados: data})
                 }else{
                     res.status(404).send({                    
-                        menssagem: 'Nenhum dado Inserido'
+                        mensagem: 'Nenhum dado Inserido'
                     });
                 }
             }
@@ -41,6 +42,7 @@ exports.getUnique = (req, res, next) => {
             "SELECT AES_DECRYPT(CPF, SHA2('Katchau95', 512)) as CPF, AES_DECRYPT(user, SHA2('Katchau95', 512)) as user, typeUser, AES_DECRYPT(name, SHA2('Katchau95', 512)) as name, AES_DECRYPT(email, SHA2('Katchau95', 512)) as email, AES_DECRYPT(cell, SHA2('Katchau95', 512)) as cell "+'FROM User WHERE CPF = AES_ENCRYPT(?,SHA2("'+key+'",'+type+'));',
             [req.params.CPF],
             (error, resultado, fields) => {
+                conn.release()
                 if(error) { return res.status(500).send({error : error})}
                 else if (resultado.length > 0){
                     return res.status(200).send({
@@ -53,7 +55,7 @@ exports.getUnique = (req, res, next) => {
                     })
                 }else{
                     res.status(404).send({                    
-                        menssagem: 'Não há um usuário cadastrado com este CPF'
+                        mensagem: 'Não há um usuário cadastrado com este CPF'
                     });
                 }
             }
@@ -84,7 +86,7 @@ exports.register = (req, res, next) => {
                             conn.release()
                             if(error) { return res.status(500).send({error : error})}
                             res.status(201).send({
-                                menssagem: 'Cadastrado com sucesso!',
+                                mensagem: 'Cadastrado com sucesso!',
                                 CPF: resultado.InsertCPF
                             });
                             }
@@ -93,7 +95,7 @@ exports.register = (req, res, next) => {
                 }
                 else{
                     conn.release();
-                    return res.status(500).send({menssagem: " Usuário já existente no sistema!"})
+                    return res.status(500).send({mensagem: " Usuário já existente no sistema!"})
                    
                 }
             })
@@ -129,8 +131,8 @@ exports.alter = (req, res, next) => {
                     conn.release();
                     if(error) { return res.status(500).send({error : error})}
     
-                    return res.status(202).send({
-                        menssagem: 'Alterado com Sucesso!',
+                    return res.status(200).send({
+                        mensagem: 'Alterado com Sucesso!',
                     });
                 }
             )
@@ -149,8 +151,8 @@ exports.delete = (req, res, next) => {
                 conn.release();
                 if(error) { return res.status(500).send({error : error})}
 
-                res.status(202).send({
-                    menssagem: 'Usuario removido!',
+                res.status(200).send({
+                    mensagem: 'Usuario removido!',
                 });
             }
         )
