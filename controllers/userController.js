@@ -86,8 +86,7 @@ exports.register = (req, res, next) => {
                             conn.release()
                             if(error) { return res.status(500).send({error : error})}
                             res.status(201).send({
-                                mensagem: 'Cadastrado com sucesso!',
-                                CPF: resultado.InsertCPF
+                                mensagem: 'Cadastrado com sucesso!'
                             });
                             }
                         )

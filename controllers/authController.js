@@ -8,7 +8,7 @@ exports.auth = (req, res, next) =>{
         const key = process.env.ENCRYPT_KEY
         const type = process.env.ENCRYPT_TYPE
             conn.query(
-                'SELECT CPF, user, pass, typeUser from User WHERE user = AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))'
+                'SELECT AES_DECRYPT(user,SHA2("'+key+'",'+type+')) as user, pass, typeUser from User WHERE user = AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))'
                 +' or email = AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))',
                 [req.body.login, req.body.login],
                 (error ,resultados, field) =>{
@@ -19,19 +19,19 @@ exports.auth = (req, res, next) =>{
                             if(error) { return res.status(500).send({error : error})}
                             if (resultado){
                                 const token = jwt.sign({
-                                    user: resultados[0].user,
+                                    user: resultados[0].user.toString(),
                                     typeUser: resultados[0].typeUser
                                 }, process.env.JWT_KEY,
                                 {
-                                    expiresIn: "1h"
+                                    expiresIn: "7d"
                                 })
                                 res.status(202).send({             
                                     auth: true,
                                     token: token                               
                                 });       
                             }else{
-                                res.status(401).send({                    
-                                    menssagem: 'Usuário ou senha incorretos'
+                                res.status(401).    send({                    
+                                    mensagem: 'Usuário ou senha incorretos'
                                 });
                             }                            
                         })
@@ -54,8 +54,8 @@ exports.loadsession = (req,res,next) => {
                 'SELECT AES_DECRYPT(name,SHA2("'+key+'",'+type+')) as name'
                 +', AES_DECRYPT(user,SHA2("'+key+'",'+type+')) as user'
                 +', typeUser, AES_DECRYPT(email,SHA2("'+key+'",'+type+')) as email'
-                +' from User WHERE user = AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))',
-                [req.body.user],
+                +' from User WHERE AES_DECRYPT(user,SHA2("'+key+'",'+type+')) = ?',
+                [req.user.user],
                 (err,result,field) => {
                     conn.release()
                     if(err) { return res.status(500).send({ error: err }) }
