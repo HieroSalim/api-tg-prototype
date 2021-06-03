@@ -9,8 +9,11 @@ router.get('/', jwt, DoctorController.getAll);
 //Busca um doctor específico
 router.get('/:CPF', jwt, DoctorController.getUnique);
 
+//Aceita ou Recusa a solicitação médica
+router.post('/define', DoctorController.defineMedic)
+
 //Cadastra um doctor
-router.post('/', jwt, DoctorController.upMedic);
+router.post('/', DoctorController.upMedic);
  
 //Altera um doctor
 router.patch('/', jwt, DoctorController.alter);

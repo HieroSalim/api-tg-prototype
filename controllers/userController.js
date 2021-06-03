@@ -33,6 +33,27 @@ exports.getAll = (req, res, next) => {
     });
 }
 
+exports.getCPF = (req, res, next) => {
+    mysql.getConnection((err, conn) => {
+        if(err) { return res.status(500).send({ error: err }) }
+        const key = process.env.ENCRYPT_KEY
+        const type = process.env.ENCRYPT_TYPE
+        conn.query('SELECT AES_DECRYPT(CPF, SHA2("'+key+'", '+type+')) as CPF FROM User WHERE user = AES_ENCRYPT(?,SHA2("'+key+'",'+type+'));',
+        [req.params.user],
+        (error, resultado) => {
+            conn.release()
+            if(error) { return res.status(500).send({ error: error }) }
+            else if(resultado.length > 0){
+                return res.status(200).send({ CPF: resultado[0].CPF.toString() })
+            }else{
+                res.status(200).send({                    
+                    mensagem: 'CPF não encontrado'
+                });
+            }
+        })
+    })
+}
+
 exports.getUnique = (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if (error) { return res.status(500).send({error : error})}
@@ -54,7 +75,7 @@ exports.getUnique = (req, res, next) => {
                         cell: resultado[0].cell.toString()
                     })
                 }else{
-                    res.status(404).send({                    
+                    res.status(200).send({                    
                         mensagem: 'Não há um usuário cadastrado com este CPF'
                     });
                 }
@@ -65,16 +86,21 @@ exports.getUnique = (req, res, next) => {
 
 exports.register = (req, res, next) => {
     mysql.getConnection((error, conn) => {
-        if (error) { return res.status(500).send({error : error})}
+        if (error) { 
+        console.log(error)
+        return res.status(500).send({error : error})}
         const key = process.env.ENCRYPT_KEY
         const type = process.env.ENCRYPT_TYPE
         conn.query(
             'SELECT * FROM User WHERE user = AES_ENCRYPT(?,SHA2("'+key+'",'+type+'));',
             [req.body.user],
             (error, resultado, fields) => {
+                console.log(error)
                 if(resultado == 0){                    
                     bcrypt.hash(req.body.pass, 10 ,(errBcrypt, hash) => {
-                        if(errBcrypt) { return res.status(500).send({ error : errBcrypt})}
+                        if(errBcrypt) { 
+                            console.log(errBcrypt)
+                            return res.status(500).send({ error : errBcrypt})}
                         conn.query(
                             'INSERT INTO User (CPF, user, pass, typeUser, name, email, cell)'
                             +' VALUES (AES_ENCRYPT(?,SHA2("'+key+'",'+type+')),'
@@ -84,7 +110,9 @@ exports.register = (req, res, next) => {
                             [req.body.CPF, req.body.user, hash, req.body.typeUser, req.body.name, req.body.email, req.body.cell],
                             (error, resultado, field) =>{
                             conn.release()
-                            if(error) { return res.status(500).send({error : error})}
+                            if(error) { 
+                                console.log(error)
+                                return res.status(500).send({error : error})}
                             res.status(201).send({
                                 mensagem: 'Cadastrado com sucesso!'
                             });
@@ -94,7 +122,7 @@ exports.register = (req, res, next) => {
                 }
                 else{
                     conn.release();
-                    return res.status(500).send({mensagem: " Usuário já existente no sistema!"})
+                    return res.status(500).send({mensagem: "Usuário já existente no sistema!"})
                    
                 }
             })

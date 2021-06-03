@@ -10,7 +10,7 @@ router.get('/', jwt, appointmentController.all);
 router.get('/:idAppointment', jwt, appointmentController.unique);
 
 //Cadastra um agendamento
-router.post('/', jwt, appointmentController.register);
+router.post('/', appointmentController.register);
 
 //Altera um agendamento
 router.patch('/', jwt, appointmentController.alter);

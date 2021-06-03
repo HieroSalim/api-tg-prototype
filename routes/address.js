@@ -8,7 +8,7 @@ const AddressController = require('../controllers/addressController')
 router.get('/:user_CPF', jwt, AddressController.select)
 
 //Adiciona um endereço a um usuário
-router.post('/', jwt, AddressController.add)
+router.post('/', AddressController.add)
 
 //Modifica um endereço
 router.patch('/', jwt, AddressController.alter)

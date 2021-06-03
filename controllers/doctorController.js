@@ -84,9 +84,9 @@ exports.upMedic = (req,res,next) => {
                         //query de registro médico
                         conn.beginTransaction()
                         conn.query(
-                            'INSERT INTO Doctor (typeProfessional, professionalId, specialization, CNH, typeCNH, user_CPF)'+
+                            'INSERT INTO Doctor (typeProfessional, professionalId, specialization, CNH, typeCNH, user_CPF, status)'+
                             'VALUES (?, AES_ENCRYPT(?,SHA2("'+key+'",'+type+')), AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))'+
-                            ', AES_ENCRYPT(?,SHA2("'+key+'",'+type+')),?, AES_ENCRYPT(?,SHA2("'+key+'",'+type+')));',
+                            ', AES_ENCRYPT(?,SHA2("'+key+'",'+type+')),?, AES_ENCRYPT(?,SHA2("'+key+'",'+type+')),0);',
                             [
                                 req.body.typeProfessional, req.body.professionalId, req.body.specialization,
                                 req.body.CNH, req.body.typeCNH, req.body.CPF
@@ -96,27 +96,86 @@ exports.upMedic = (req,res,next) => {
                                     conn.release()
                                     return res.status(500).send({ error: error }) 
                                 }
-                                conn.query('UPDATE User SET typeUser = "Médico" WHERE CPF = AES_ENCRYPT(?,SHA2("'+key+'",'+type+'));',
-                                [req.body.CPF],
-                                (error,result,fields) =>{
-                                    if(error) { 
-                                        conn.rollback()
-                                        conn.release()
-                                        return res.status(500).send({ 
-                                            error: error 
-                                        }) 
-                                    }
-                                    conn.commit()
-                                    conn.release()
-                                    res.status(201).send({
-                                        mensagem: 'Usuário atribuido como médico com Sucesso!'
-                                    })
-                                })                            
+                                conn.commit()
+                                conn.release()
+                                res.status(201).send({
+                                    mensagem: 'Solicitado para ser médico com Sucesso!'
+                                })
                             }
                         )
                     }else{
-                        res.status(403).send({ mensagem: 'Modificação não aplicada' })
+                        res.status(403).send({ mensagem: 'Solicitação não aplicada' })
                     }
+                }else{
+                    res.status(404).send({ mensagem: 'Não foi possível completar a ação' })
+                }
+            }
+        )
+    })
+}
+
+exports.defineMedic = (req, res, next) => {
+    const key = process.env.ENCRYPT_KEY
+    const type = process.env.ENCRYPT_TYPE
+    mysql.getConnection((err, conn) => {
+        if(err) { return res.status(500).send({ error: err }) }
+        conn.beginTransaction()
+        conn.query(
+            'SELECT typeUser from User where CPF = AES_ENCRYPT(?,SHA2("'+key+'",'+type+'));',
+            [req.body.CPF],
+            (error,results,fields) => {
+                if(error) { 
+                    conn.release()
+                    return res.status(500).send({ error: error }) 
+                }
+                else if(results.length > 0){
+                    conn.query(
+                        `UPDATE Doctor
+                            SET status = ? WHERE user_CPF = AES_ENCRYPT(?,SHA2("`+key+`",`+type+`))`,
+                        [req.body.status, req.body.CPF],
+                        (error, result) => {
+                            if(error) {
+                                conn.release()
+                                return res.status(500).send({ error: error })
+                            }
+                            console.log()
+                            if(result && req.body.status == 1){
+                                conn.query(
+                                    `UPDATE User
+                                        SET typeUser = ?`,
+                                    ['Médico'],
+                                    (erro, resultado) => {
+                                        if(erro) { 
+                                            conn.rollback()
+                                            conn.release()
+                                            return res.status(500).send({ error: erro }) 
+                                        }
+                                        conn.commit()
+                                        conn.release()
+                                        res.status(200).send({
+                                            mensagem: "Médico Aprovado"
+                                        })
+                                    }
+                                )
+                            }else{
+                                conn.query(
+                                    `DElETE FROM Doctor WHERE user_CPF = AES_ENCRYPT(?,SHA2("`+key+`",`+type+`))`, [req.body.CPF],
+                                    (error, resultado) =>{
+                                        if(error) { 
+                                            conn.rollback()
+                                            conn.release()
+                                            return res.status(500).send({error : error})
+                                        }
+                                        conn.commit()
+                                        conn.release()
+                                        res.status(200).send({
+                                            mensagem: 'Solicitação médica removida!',
+                                        });
+                                    }
+                                )
+                            }
+                        }
+                    )
                 }else{
                     res.status(404).send({ mensagem: 'Não foi possível completar a ação' })
                 }
