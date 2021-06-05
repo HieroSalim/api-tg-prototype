@@ -1,5 +1,45 @@
 const mysql = require('../mysql').pool
 
+exports.searchDoctorsOn = (req, res, next) => {
+    const key = process.env.ENCRYPT_KEY
+    const type = process.env.ENCRYPT_TYPE
+    mysql.getConnection((err, conn) => {
+        if(err) { return res.status(500).send({ error: err }) }
+        conn.query(
+            'SELECT idDoctor, idProfile, AES_DECRYPT(name,SHA2("'+key+'",'+type+')) as name, doc.typeProfessional, AES_DECRYPT(doc.professionalId,SHA2("'+key+'",'+type+')) as professionalId'+
+            ', AES_DECRYPT(doc.specialization,SHA2("'+key+'",'+type+')) as specialization, prof.description, prof.price '+
+            'FROM Doctor doc JOIN ProfileDoctor prof on idDoctor = doctor_id JOIN User on doc.user_CPF = CPF '+
+            'WHERE doc.idDoctor NOT IN (SELECT DISTINCT user_CPF from Appointment WHERE dateHour = ?) '+
+            'AND doc.typeProfessional = ?',
+            [req.params.dateHour, req.params.type],
+            (erro, results) => {
+                conn.release()
+                if(erro) { return res.status(500).send({ error: err }) }
+                else if(results.length > 0){
+                    var data = []
+                    results.forEach(dado => {
+                        data.push({
+                            idDoctor: dado.idDoctor,
+                            idProfile: dado.idProfile,
+                            typeProfessional: dado.typeProfessional,
+                            professionalId: dado.professionalId.toString(),
+                            specialization: dado.specialization.toString(),
+                            description: dado.description,
+                            name: dado.name.toString(),
+                            price: dado.price
+                        })
+                    })
+                    return res.status(200).send({
+                        dados: data
+                    })
+                }else{
+                    res.status(404).send({ mensagem: 'Nenhum médico encontrado nesse horário'})
+                }
+            }
+        )
+    })
+}
+
 exports.getAll = (req,res,next) => {
     const key = process.env.ENCRYPT_KEY
     const type = process.env.ENCRYPT_TYPE
@@ -8,7 +48,7 @@ exports.getAll = (req,res,next) => {
         conn.query(
             'SELECT idDoctor, typeProfessional, AES_DECRYPT(professionalId,SHA2("'+key+'",'+type+')) as professionalId'+
             ', AES_DECRYPT(specialization,SHA2("'+key+'",'+type+')) as specialization, AES_DECRYPT(CNH,SHA2("'+key+'",'+type+')) as CNH'+
-            ', typeCNH from Doctor',
+            ', typeCNH FROM Doctor',
             (error, results, fields) => {
                 conn.release()
                 if(error) { return res.status(500).send({ error: error }) }
@@ -41,24 +81,23 @@ exports.getUnique = (req,res,next) => {
     mysql.getConnection((err,conn) => {
         if(err) { return res.status(500).send({ error: err }) }
         conn.query(
-            'SELECT idDoctor, typeProfessional, AES_DECRYPT(professionalId,SHA2("'+key+'",'+type+')) as professionalId'+
-            ', AES_DECRYPT(specialization,SHA2("'+key+'",'+type+')) as specialization, AES_DECRYPT(CNH,SHA2("'+key+'",'+type+')) as CNH'+
-            ', typeCNH from Doctor WHERE user_CPF = AES_ENCRYPT(?, SHA2("'+key+'",'+type+'))',
-            [req.body.user_CPF],
-            (error, results, fields) => {
+            'SELECT AES_DECRYPT(name,SHA2("'+key+'",'+type+')) as name, typeProfessional, AES_DECRYPT(specialization,SHA2("'+key+'",'+type+')) as specialization,'+
+            'prof.description, prof.price FROM Doctor doc JOIN ProfileDoctor prof on idDoctor = doctor_id '+
+            'JOIN User on doc.user_CPF = CPF WHERE idProfile = ?',
+            [req.params.id],
+            (error, result, fields) => {
                 conn.release()
                 if(error) { return res.status(500).send({ error: error }) }
-                else if(results.length > 0){
+                else if(result.length > 0){
                     return res.status(200).send({
-                        idDoctor: dado.idDoctor,
-                        typeProfessional: dado.typeProfessional,
-                        professionalId: dado.professionalId.toString(),
-                        specialization: dado.specialization.toString(),
-                        CNH: dado.CNH.toString(),
-                        typeCNH: dado.typeCNH
+                        name: result[0].name.toString(),
+                        typeProfessional: result[0].typeProfessional,
+                        specialization: result[0].specialization.toString(),
+                        description: result[0].description,
+                        price: result[0].price
                     })
                 }else{
-                    res.status(404).send({ mensagem: 'Nenhum dado inserido'})
+                    res.status(404).send({ mensagem: 'Perfil não encontrado'})
                 }
             }
         )

@@ -7,7 +7,9 @@ const DoctorController = require('../controllers/doctorController')
 router.get('/', jwt, DoctorController.getAll);
 
 //Busca um doctor específico
-router.get('/:CPF', jwt, DoctorController.getUnique);
+router.get('/:id', jwt, DoctorController.getUnique);
+
+router.get('/on/:type/:dateHour', DoctorController.searchDoctorsOn)
 
 //Aceita ou Recusa a solicitação médica
 router.post('/define', DoctorController.defineMedic)
