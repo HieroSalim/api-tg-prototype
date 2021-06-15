@@ -9,4 +9,6 @@ router.post('/', authController.auth);
 //Carrega os dados do usuário
 router.get('/loadsession', jwt, authController.loadsession)
 
+router.post('/terms', jwt, authController.authorize)
+
 module.exports = router

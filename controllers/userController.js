@@ -24,7 +24,7 @@ exports.getAll = (req, res, next) => {
                     return res.status(200).send({
                         dados: data})
                 }else{
-                    res.status(404).send({                    
+                    res.status(404).send({
                         mensagem: 'Nenhum dado Inserido'
                     });
                 }
@@ -46,7 +46,7 @@ exports.getCPF = (req, res, next) => {
             else if(resultado.length > 0){
                 return res.status(200).send({ CPF: resultado[0].CPF.toString() })
             }else{
-                res.status(200).send({                    
+                res.status(200).send({
                     mensagem: 'CPF não encontrado'
                 });
             }
@@ -59,7 +59,7 @@ exports.getUnique = (req, res, next) => {
         if (error) { return res.status(500).send({error : error})}
         const key = process.env.ENCRYPT_KEY
         const type = process.env.ENCRYPT_TYPE
-        conn.query(            
+        conn.query(
             "SELECT AES_DECRYPT(CPF, SHA2('Katchau95', 512)) as CPF, AES_DECRYPT(user, SHA2('Katchau95', 512)) as user, typeUser, AES_DECRYPT(name, SHA2('Katchau95', 512)) as name, AES_DECRYPT(email, SHA2('Katchau95', 512)) as email, AES_DECRYPT(cell, SHA2('Katchau95', 512)) as cell "+'FROM User WHERE CPF = AES_ENCRYPT(?,SHA2("'+key+'",'+type+'));',
             [req.params.CPF],
             (error, resultado, fields) => {
@@ -96,17 +96,17 @@ exports.register = (req, res, next) => {
             [req.body.user],
             (error, resultado, fields) => {
                 console.log(error)
-                if(resultado == 0){                    
+                if(resultado == 0){
                     bcrypt.hash(req.body.pass, 10 ,(errBcrypt, hash) => {
-                        if(errBcrypt) { 
+                        if(errBcrypt) {
                             console.log(errBcrypt)
                             return res.status(500).send({ error : errBcrypt})}
                         conn.query(
-                            'INSERT INTO User (CPF, user, pass, typeUser, name, email, cell)'
+                            'INSERT INTO User (CPF, user, pass, typeUser, name, email, cell, status)'
                             +' VALUES (AES_ENCRYPT(?,SHA2("'+key+'",'+type+')),'
                             +' AES_ENCRYPT(?,SHA2("'+key+'",'+type+')), ? , ? ,'
                             +' AES_ENCRYPT(?,SHA2("'+key+'",'+type+')), AES_ENCRYPT(?,SHA2("'+key+'",'+type+')),'
-                            +' AES_ENCRYPT(?,SHA2("'+key+'",'+type+')))',
+                            +' AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))), 0',
                             [req.body.CPF, req.body.user, hash, req.body.typeUser, req.body.name, req.body.email, req.body.cell],
                             (error, resultado, field) =>{
                             conn.release()
@@ -118,12 +118,11 @@ exports.register = (req, res, next) => {
                             });
                             }
                         )
-                    })                      
+                    })
                 }
                 else{
                     conn.release();
                     return res.status(500).send({mensagem: "Usuário já existente no sistema!"})
-                   
                 }
             })
     });
@@ -138,7 +137,7 @@ exports.alter = (req, res, next) => {
             if(errBcrypt) { return res.status(500).send({ error : errBcrypt})}
 
             conn.query(
-                `UPDATE User 
+                `UPDATE User
                     SET user     = AES_ENCRYPT(?,SHA2("`+key+`",`+type+`)),
                         pass     = ?,
                         typeUser = ?,
@@ -157,13 +156,13 @@ exports.alter = (req, res, next) => {
                 (error, resultado, field) =>{
                     conn.release();
                     if(error) { return res.status(500).send({error : error})}
-    
+
                     return res.status(200).send({
                         mensagem: 'Alterado com Sucesso!',
                     });
                 }
             )
-        })        
+        })
     });
 }
 

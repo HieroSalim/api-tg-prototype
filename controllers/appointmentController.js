@@ -26,10 +26,10 @@ exports.all = (req, res, next) => {
                         })
                     });
                     return res.status(200).send({
-                        dado: data
+                        dados: data
                     })
                 }else{
-                    res.status(404).send({                    
+                    res.status(404).send({
                         mensagem: 'Nenhum dado Inserido'
                     });
                 }
@@ -52,7 +52,7 @@ exports.unique = (req, res, next) => {
                 conn.release()
                 if(error) { return res.status(500).send({error : error})}
                 else if(resultado.length > 0){
-                    return res.status(200).send({ 
+                    return res.status(200).send({
                         idAppointment: resultado[0].idAppointment,
                         user_CPF: resultado[0].user_CPF.toString(),
                         symptoms: resultado[0].symptoms.toString(),
@@ -62,10 +62,10 @@ exports.unique = (req, res, next) => {
                         statusDoctor: resultado[0].statusDoctor
                     })
                 }else{
-                    res.status(404).send({                    
+                    res.status(404).send({
                         mensagem: 'Não encontrado'
                     });
-                }                
+                }
             }
         )
     });
@@ -81,12 +81,12 @@ exports.register = (req, res, next) => {
                  FROM Address WHERE user_CPF = AES_ENCRYPT(?, SHA2("`+key+`",`+type+`))`,
                  [req.body.CPF],
                  (error, result) => {
-                    if(error) { 
-                        conn.release() 
+                    if(error) {
+                        conn.release()
                         return res.status(500).send({ error: error })
                     }
                     if(result.length > 0){
-                        conn.query(   
+                        conn.query(
                             'INSERT INTO Appointment (user_CPF, description, dateHour, doctors, statusDoctor, fkAddress)'
                             +' VALUES (AES_ENCRYPT(?,SHA2("'+key+'",'+type+')),AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))'
                             +',?,?,?,?)',
@@ -156,9 +156,102 @@ exports.delete = (req, res, next) => {
                 if(error) { return res.status(500).send({error : error})}
 
                 res.status(200).send({
-                    mensagem: 'Agendamento excluído!',
+                    mensagem: 'Agendamento excluído!'
                 });
             }
         )
     });
+}
+
+exports.accept = (req, res, next) => {
+    mysql.getConnection((err, conn) => {
+        if (err) return res.status(500).send({ error: err })
+
+        conn.query(
+            `UPDATE Appointment
+                SET doctors    = ?,
+                    statusDoctor = ?
+             WHERE idAppointment     = ?`,
+             [req.body.doctors, req.body.statusDoctor, req.body.idAppointment],
+             (error, result) => {
+                conn.release()
+                if(error) {
+                    return res.status(500).send({ error: error })
+                }
+                res.status(200).send({
+                    mensagem: 'Agendamento Aprovado'
+                })
+             })
+    })
+}
+
+exports.solicitations = (req, res, next) => {
+    mysql.getConnection((err, conn) => {
+        if(err) return res.status(500).send({ error: err })
+        const key = process.env.ENCRYPT_KEY
+        const type = process.env.ENCRYPT_TYPE
+        conn.query(
+            'SELECT idAppointment, aes_decrypt(user_CPF, SHA2("'+key+'",'+type+')) as user_CPF, aes_decrypt(description, SHA2("'+key+'",'+type+')) as description,'+
+            'dateHour, doctors, statusDoctor from Appointment join User on user_CPF = User.CPF WHERE statusDoctor = 0 and User.user = aes_encrypt(?, SHA2("'+key+'",'+type+'))',
+            [req.params.user],
+            (error, resultado, field) => {
+                if(error) return res.status(500).send({ error: error })
+                else if(resultado.length > 0){
+                    var data = []
+                    resultado.forEach(dado => {
+                        data.push( {
+                            idAppointment: dado.idAppointment,
+                            user_CPF: dado.user_CPF.toString(),
+                            description: dado.description.toString(),
+                            dateHour: dado.dateHour,
+                            doctors: dado.doctors,
+                            statusDoctor: dado.statusDoctor
+                        })
+                    });
+                    return res.status(200).send({
+                        dados: data
+                    })
+                }else{
+                    res.status(404).send({
+                        mensagem: 'Nenhuma solicitação pendente'
+                    });
+                }
+            })
+    })
+}
+
+exports.appointments = (req, res, next) => {
+    mysql.getConnection((err, conn) => {
+        if (err) return res.status(500).send({ error: err })
+        const key = process.env.ENCRYPT_KEY
+        const type = process.env.ENCRYPT_TYPE
+        conn.query(
+            'SELECT idAppointment, aes_decrypt(user_CPF, SHA2("'+key+'",'+type+')) as user_CPF, aes_decrypt(description, SHA2("'+key+'",'+type+')) as description,'+
+            'dateHour, doctors, statusDoctor from Appointment join User on user_CPF = User.CPF WHERE statusDoctor = 1 and User.user = aes_encrypt(?, SHA2("'+key+'",'+type+'))',
+            [req.params.user],
+            (error, resultado, field) => {
+                if(error) return res.status(500).send({ error: error })
+                else if(resultado.length > 0){
+                    var data = []
+                    resultado.forEach(dado => {
+                        data.push( {
+                            idAppointment: dado.idAppointment,
+                            user_CPF: dado.user_CPF.toString(),
+                            description: dado.description.toString(),
+                            dateHour: dado.dateHour,
+                            doctors: dado.doctors,
+                            statusDoctor: dado.statusDoctor
+                        })
+                    });
+                    return res.status(200).send({
+                        dados: data
+                    })
+                }else{
+                    res.status(404).send({
+                        mensagem: 'Nenhum agendamento realizado'
+                    });
+                }
+            }
+        )
+    })
 }

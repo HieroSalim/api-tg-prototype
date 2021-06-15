@@ -8,7 +8,7 @@ exports.auth = (req, res, next) =>{
         const key = process.env.ENCRYPT_KEY
         const type = process.env.ENCRYPT_TYPE
             conn.query(
-                'SELECT AES_DECRYPT(user,SHA2("'+key+'",'+type+')) as user, pass, typeUser from User WHERE user = AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))'
+                'SELECT AES_DECRYPT(user,SHA2("'+key+'",'+type+')) as user, pass, typeUser,status from User WHERE user = AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))'
                 +' or email = AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))',
                 [req.body.login, req.body.login],
                 (error ,resultados, field) =>{
@@ -25,21 +25,22 @@ exports.auth = (req, res, next) =>{
                                 {
                                     expiresIn: "7d"
                                 })
-                                res.status(202).send({             
+                                res.status(202).send({
                                     auth: true,
-                                    token: token                               
-                                });       
+                                    token: token,
+                                    status: resultados[0].status
+                                });
                             }else{
-                                res.status(401).    send({                    
+                                res.status(401).    send({
                                     mensagem: 'Usuário ou senha incorretos'
                                 });
-                            }                            
+                            }
                         })
                     }else{
-                        res.status(401).send({                    
+                        res.status(401).send({
                             mensagem: 'Usuário ou senha incorretos'
                         });
-                    }                    
+                    }
                 }
             )
     });
@@ -70,5 +71,26 @@ exports.loadsession = (req,res,next) => {
                     return res.status(400).send({ mensagem: 'Falha no carregamento!' })
                 }
             )
+    })
+}
+
+exports.authorize = (req, res, next) => {
+    mysql.getConnection((err, conn) => {
+        if (err) return res.status(500).send({ error: err })
+        const key = process.env.ENCRYPT_KEY
+        const type = process.env.ENCRYPT_TYPE
+        conn.query(
+            `UPDATE User
+                SET status  =   AES_ENCRYPT(?,SHA2("`+key+`",`+type+`))
+            WHERE user = AES_ENCRYPT(?,SHA2("`+key+`",`+type+`))`,
+            [req.body.status, req.body.user],
+            (error, resultado, field) => {
+                conn.release();
+                    if(error) { return res.status(500).send({error : error})}
+                    return res.status(200).send({
+                        mensagem: 'Política assinada'
+                    });
+            }
+        )
     })
 }
