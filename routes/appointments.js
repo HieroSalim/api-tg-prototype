@@ -18,6 +18,9 @@ router.get('/confirm/:user', jwt, appointmentController.appointments);
 //Busca agendamentos completos
 router.get('/completes/:user', jwt, appointmentController.consults);
 
+//Busca de solicitações para o médico
+router.get('/medic/:user', jwt, appointmentController.medicSolicitations);
+
 //Aceita ou recusa os termos de uso
 router.post('/terms', jwt, appointmentController.accept);
 
