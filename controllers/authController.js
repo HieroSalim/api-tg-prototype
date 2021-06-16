@@ -26,12 +26,11 @@ exports.auth = (req, res, next) =>{
                                     expiresIn: "7d"
                                 })
                                 res.status(202).send({
-                                    auth: true,
-                                    token: token,
-                                    status: resultados[0].status
+                                    auth: Boolean(resultados[0].status),
+                                    token: token
                                 });
                             }else{
-                                res.status(401).    send({
+                                res.status(401).send({
                                     mensagem: 'Usuário ou senha incorretos'
                                 });
                             }
@@ -81,7 +80,7 @@ exports.authorize = (req, res, next) => {
         const type = process.env.ENCRYPT_TYPE
         conn.query(
             `UPDATE User
-                SET status  =   AES_ENCRYPT(?,SHA2("`+key+`",`+type+`))
+                SET status  =   ?
             WHERE user = AES_ENCRYPT(?,SHA2("`+key+`",`+type+`))`,
             [req.body.status, req.body.user],
             (error, resultado, field) => {

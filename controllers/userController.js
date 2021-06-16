@@ -106,7 +106,7 @@ exports.register = (req, res, next) => {
                             +' VALUES (AES_ENCRYPT(?,SHA2("'+key+'",'+type+')),'
                             +' AES_ENCRYPT(?,SHA2("'+key+'",'+type+')), ? , ? ,'
                             +' AES_ENCRYPT(?,SHA2("'+key+'",'+type+')), AES_ENCRYPT(?,SHA2("'+key+'",'+type+')),'
-                            +' AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))), 0',
+                            +' AES_ENCRYPT(?,SHA2("'+key+'",'+type+')), 0)',
                             [req.body.CPF, req.body.user, hash, req.body.typeUser, req.body.name, req.body.email, req.body.cell],
                             (error, resultado, field) =>{
                             conn.release()

@@ -10,13 +10,16 @@ router.get('/', jwt, appointmentController.all);
 router.get('/:idAppointment', jwt, appointmentController.unique);
 
 //Busca as solicitações de agendamento
-router.get('/:user', jwt, appointmentController.solicitations)
+router.get('/solicitation/:user', jwt, appointmentController.solicitations)
 
 //Busca agendamentos confirmados
-router.get('/confirm/:user', jwt, appointmentController.appointments)
+router.get('/confirm/:user', jwt, appointmentController.appointments);
+
+//Busca agendamentos completos
+router.get('/completes/:user', jwt, appointmentController.consults);
 
 //Aceita ou recusa os termos de uso
-router.post('/terms', jwt, appointmentController.accept)
+router.post('/terms', jwt, appointmentController.accept);
 
 //Cadastra um agendamento
 router.post('/', appointmentController.register);
