@@ -77,9 +77,9 @@ exports.register = (req, res, next) => {
             const key = process.env.ENCRYPT_KEY
             const type = process.env.ENCRYPT_TYPE
             conn.query(
-                `SELECT AES_DECRYPT(street, SHA2("`+key+`",`+type+`)) as street, AES_DECRYPT(neighborhood, SHA2("`+key+`",`+type+`)) as neighborhood
-                 FROM Address WHERE user_CPF = AES_ENCRYPT(?, SHA2("`+key+`",`+type+`))`,
-                 [req.body.CPF],
+                `SELECT AES_DECRYPT(street, SHA2("`+key+`",`+type+`)) as street, AES_DECRYPT(neighborhood, SHA2("`+key+`",`+type+`)) as neighborhood,
+                 AES_DECRYPT(User.CPF, SHA2("`+key+`",`+type+`)) as CPF FROM Address JOIN User on User.CPF = user_CPF WHERE User.user = AES_ENCRYPT(?, SHA2("`+key+`",`+type+`))`,
+                 [req.body.user],
                  (error, result) => {
                     if(error) {
                         conn.release()
@@ -90,7 +90,7 @@ exports.register = (req, res, next) => {
                             'INSERT INTO Appointment (user_CPF, description, dateHour, doctors, statusDoctor, fkAddress)'
                             +' VALUES (AES_ENCRYPT(?,SHA2("'+key+'",'+type+')),AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))'
                             +',?,?,?,?)',
-                            [req.body.CPF, req.body.description, req.body.dateHour, req.body.doctors, 0,req.body.fkAddress],
+                            [result[0].CPF, req.body.description, req.body.dateHour, req.body.doctors, 0,req.body.fkAddress],
                             (error, resultado, field) =>{
                                 conn.release();
                                 if(error) { return res.status(500).send({error : error})}
@@ -205,7 +205,7 @@ exports.solicitations = (req, res, next) => {
                             idAppointment: dado.idAppointment,
                             name: dado.name.toString(),
                             description: dado.description.toString(),
-                            dateHour: dado.dateHour,
+                            dateHour: dado.dateHour.toLocaleString(),
                             statusDoctor: dado.statusDoctor
                         })
                     });

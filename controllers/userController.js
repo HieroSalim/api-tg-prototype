@@ -60,8 +60,10 @@ exports.getUnique = (req, res, next) => {
         const key = process.env.ENCRYPT_KEY
         const type = process.env.ENCRYPT_TYPE
         conn.query(
-            "SELECT AES_DECRYPT(CPF, SHA2('Katchau95', 512)) as CPF, AES_DECRYPT(user, SHA2('Katchau95', 512)) as user, typeUser, AES_DECRYPT(name, SHA2('Katchau95', 512)) as name, AES_DECRYPT(email, SHA2('Katchau95', 512)) as email, AES_DECRYPT(cell, SHA2('Katchau95', 512)) as cell "+'FROM User WHERE CPF = AES_ENCRYPT(?,SHA2("'+key+'",'+type+'));',
-            [req.params.CPF],
+            "SELECT AES_DECRYPT(CPF, SHA2('"+key+"', "+type+")) as CPF, AES_DECRYPT(user, SHA2('"+key+"', "+type+")) as user,"+
+            " typeUser, AES_DECRYPT(name, SHA2('"+key+"', "+type+")) as name, AES_DECRYPT(email, SHA2('"+key+"', "+type+")) as email,"+
+            " AES_DECRYPT(cell, SHA2('"+key+"', "+type+")) as cell FROM User WHERE user = AES_ENCRYPT(?,SHA2('"+key+"',"+type+"));",
+            [req.params.user],
             (error, resultado, fields) => {
                 conn.release()
                 if(error) { return res.status(500).send({error : error})}
@@ -75,8 +77,8 @@ exports.getUnique = (req, res, next) => {
                         cell: resultado[0].cell.toString()
                     })
                 }else{
-                    res.status(200).send({                    
-                        mensagem: 'Não há um usuário cadastrado com este CPF'
+                    res.status(404).send({
+                        mensagem: 'Usuário não encontrado'
                     });
                 }
             }
@@ -133,36 +135,24 @@ exports.alter = (req, res, next) => {
         if (error) { return res.status(500).send({error : error})}
         const key = process.env.ENCRYPT_KEY
         const type = process.env.ENCRYPT_TYPE
-        bcrypt.hash(req.body.pass, 10 ,(errBcrypt, hash) => {
-            if(errBcrypt) { return res.status(500).send({ error : errBcrypt})}
-
-            conn.query(
-                `UPDATE User
-                    SET user     = AES_ENCRYPT(?,SHA2("`+key+`",`+type+`)),
-                        pass     = ?,
-                        typeUser = ?,
-                        name     = AES_ENCRYPT(?,SHA2("`+key+`",`+type+`)),
-                        email    = AES_ENCRYPT(?,SHA2("`+key+`",`+type+`)),
-                        cell     = AES_ENCRYPT(?,SHA2("`+key+`",`+type+`))
-                WHERE CPF       = AES_ENCRYPT(?,SHA2("`+key+`",`+type+`))`,
-                [    req.body.user,
-                     hash,
-                     req.body.typeUser,
-                     req.body.name,
-                     req.body.email,
-                     req.body.cell,
-                     req.body.CPF
-                ],
-                (error, resultado, field) =>{
-                    conn.release();
-                    if(error) { return res.status(500).send({error : error})}
-
-                    return res.status(200).send({
-                        mensagem: 'Alterado com Sucesso!',
-                    });
-                }
-            )
-        })
+        conn.query(
+            `UPDATE User
+                SET name     = AES_ENCRYPT(?,SHA2("`+key+`",`+type+`)),
+                    cell     = AES_ENCRYPT(?,SHA2("`+key+`",`+type+`))
+            WHERE user       = AES_ENCRYPT(?,SHA2("`+key+`",`+type+`))`,
+            [
+                req.body.name,
+                req.body.cell,
+                req.body.user
+            ],
+            (error, resultado, field) =>{
+                conn.release();
+                if(error) { return res.status(500).send({error : error})}
+                return res.status(200).send({
+                    mensagem: 'Alterado com Sucesso!',
+                });
+            }
+        )
     });
 }
 

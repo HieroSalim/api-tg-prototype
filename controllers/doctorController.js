@@ -81,7 +81,7 @@ exports.getUnique = (req,res,next) => {
     mysql.getConnection((err,conn) => {
         if(err) { return res.status(500).send({ error: err }) }
         conn.query(
-            'SELECT AES_DECRYPT(name,SHA2("'+key+'",'+type+')) as name, typeProfessional, AES_DECRYPT(specialization,SHA2("'+key+'",'+type+')) as specialization,'+
+            'SELECT idDoctor, AES_DECRYPT(specialization,SHA2("'+key+'",'+type+')) as specialization,'+
             'prof.description, prof.price FROM Doctor doc JOIN ProfileDoctor prof on idDoctor = doctor_id '+
             'JOIN User on doc.user_CPF = CPF WHERE idProfile = ?',
             [req.params.id],
@@ -91,7 +91,7 @@ exports.getUnique = (req,res,next) => {
                 else if(result.length > 0){
                     return res.status(200).send({
                         name: result[0].name.toString(),
-                        typeProfessional: result[0].typeProfessional,
+                        idDoctor: result[0].idDoctor,
                         specialization: result[0].specialization.toString(),
                         description: result[0].description,
                         price: result[0].price
@@ -282,4 +282,25 @@ exports.delete = (req,res,next) => {
             }
         )
     });
+}
+
+exports.addProfile = (req, res, next) => {
+    mysql.getConnection((err,conn) => {
+        if(err) return res.status(500).send({ error: err })
+        const key = process.env.ENCRYPT_KEY
+        const type = process.env.ENCRYPT_TYPE
+        conn.query(
+            `INSERT INTO ProfileDoctor (description, doctor_id, price) VALUES (?,
+                 (select idDoctor from doctor join User on User.CPF = user_CPF 
+                    where User.user = AES_ENCRYPT(?,SHA2("`+key+`",`+type+`))), ?);`,
+            [req.body.description, req.body.user, req.body.price],
+            (error, result) => {
+                conn.release()
+                if(error) return res.status(500).send({ error: error })
+                res.status(200).send({
+                    mensagem: "Perfil Registrado"
+                })
+            }
+        )
+    })
 }

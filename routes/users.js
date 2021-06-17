@@ -8,7 +8,7 @@ const UserController = require('../controllers/userController')
 router.get('/', UserController.getAll);
 
 //Busca um user específico
-router.get('/:CPF', jwt, UserController.getUnique);
+router.get('/:user', jwt, UserController.getUnique);
 
 //Busca um cpf específico
 router.get('/CPF/:user', jwt, UserController.getCPF);

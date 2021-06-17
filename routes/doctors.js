@@ -16,7 +16,10 @@ router.post('/define', DoctorController.defineMedic)
 
 //Cadastra um doctor
 router.post('/', DoctorController.upMedic);
- 
+
+//Registra Perfil do Médico
+router.post('/profile', DoctorController.addProfile)
+
 //Altera um doctor
 router.patch('/', jwt, DoctorController.alter);
 
