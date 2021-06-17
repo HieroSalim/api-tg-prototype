@@ -177,7 +177,6 @@ exports.defineMedic = (req, res, next) => {
                                 conn.release()
                                 return res.status(500).send({ error: error })
                             }
-                            console.log()
                             if(result && req.body.status == 1){
                                 conn.query(
                                     `UPDATE User

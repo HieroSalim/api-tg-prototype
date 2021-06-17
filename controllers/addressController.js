@@ -9,8 +9,8 @@ exports.select = (req,res,next) => {
             'SELECT idAddress, AES_DECRYPT(street,SHA2("'+key+'",'+type+')) as street,'+
             ' AES_DECRYPT(neighborhood,SHA2("'+key+'",'+type+')) as neighborhood, AES_DECRYPT(city,SHA2("'+key+'",'+type+')) as city,'+
             ' state, AES_DECRYPT(cep,SHA2("'+key+'",'+type+')) as cep '+
-            'FROM Address WHERE user_CPF = AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))',
-            [req.params.user_CPF],
+            'FROM Address join User on User.CPF = user_CPF WHERE User.name = AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))',
+            [req.params.user],
             (error,results,fields) =>{
                 conn.release()
                 if(error) { return res.status(500).send({ error:error }) }
@@ -18,12 +18,13 @@ exports.select = (req,res,next) => {
                     var data = []
                     results.forEach(dado => {
                         data.push({
+                            idAddress: dado.idAddress,
                             street: dado.street.toString(),
                             neighborhood: dado.neighborhood.toString(),
                             city: dado.city.toString(),
                             state: dado.state,
                             cep: dado.cep.toString()
-                        })                        
+                        })
                     });
                     return res.status(200).send({
                         dados: data
@@ -43,10 +44,11 @@ exports.add = (req,res,next) => {
         conn.query(
             'INSERT INTO Address (street, neighborhood, city, state, cep, user_CPF) '+
             'VALUES (AES_ENCRYPT(?,SHA2("'+key+'",'+type+')),AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))'+
-            ',AES_ENCRYPT(?,SHA2("'+key+'",'+type+')),?,AES_ENCRYPT(?,SHA2("'+key+'",'+type+')),AES_ENCRYPT(?,SHA2("'+key+'",'+type+')))',
-            [req.body.street, req.body.neighborhood, req.body.city, req.body.state, req.body.cep, req.body.user_CPF],
+            ',AES_ENCRYPT(?,SHA2("'+key+'",'+type+')),?,AES_ENCRYPT(?,SHA2("'+key+'",'+type+')), aes_encrypt(cast((select aes_decrypt(CPF,SHA2("'+key+'",'+type+')) from User where user = AES_ENCRYPT(?,SHA2("'+key+'",'+type+'))) as character), SHA2("'+key+'",'+type+')) )',
+            [req.body.street, req.body.neighborhood, req.body.city, req.body.state, req.body.cep, req.body.user],
             (error, results, fields) =>{
                 conn.release()
+                console.log(error)
                 if(error) { return res.status(500).send({ error: error }) } 
                 res.status(201).send({
                     mensagem: 'Endereço inserido com sucesso!',

@@ -46,7 +46,7 @@ exports.getCPF = (req, res, next) => {
             else if(resultado.length > 0){
                 return res.status(200).send({ CPF: resultado[0].CPF.toString() })
             }else{
-                res.status(200).send({
+                res.status(404).send({
                     mensagem: 'CPF não encontrado'
                 });
             }

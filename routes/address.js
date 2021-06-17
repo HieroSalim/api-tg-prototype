@@ -5,7 +5,7 @@ const jwt = require('../middleware/jwt')
 const AddressController = require('../controllers/addressController')
 
 //Busca todos os endereços de um usuário
-router.get('/:user_CPF', jwt, AddressController.select)
+router.get('/:user', jwt, AddressController.select)
 
 //Adiciona um endereço a um usuário
 router.post('/', AddressController.add)

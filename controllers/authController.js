@@ -26,7 +26,7 @@ exports.auth = (req, res, next) =>{
                                     expiresIn: "7d"
                                 })
                                 res.status(202).send({
-                                    auth: Boolean(resultados[0].status),
+                                    auth: resultados[0].status,
                                     token: token
                                 });
                             }else{
