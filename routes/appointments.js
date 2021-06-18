@@ -22,7 +22,7 @@ router.get('/completes/:user', jwt, appointmentController.consults);
 router.get('/medic/:user', jwt, appointmentController.medicSolicitations);
 
 //Aceita ou recusa os termos de uso
-router.post('/terms', jwt, appointmentController.accept);
+router.post('/setResponse', jwt, appointmentController.accept);
 
 //Cadastra um agendamento
 router.post('/', appointmentController.register);

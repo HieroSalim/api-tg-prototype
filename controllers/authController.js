@@ -60,7 +60,6 @@ exports.loadsession = (req,res,next) => {
                     conn.release()
                     if(err) { return res.status(500).send({ error: err }) }
                     if(result.length > 0){
-                        console.log(result[0].name.toString())
                         return res.status(200).send({ 
                             user: result[0].user.toString(),
                             typeUser: result[0].typeUser,

@@ -81,7 +81,7 @@ exports.getUnique = (req,res,next) => {
     mysql.getConnection((err,conn) => {
         if(err) { return res.status(500).send({ error: err }) }
         conn.query(
-            'SELECT idDoctor, AES_DECRYPT(specialization,SHA2("'+key+'",'+type+')) as specialization,'+
+            'SELECT idDoctor, AES_DECRYPT(name,SHA2("'+key+'",'+type+')) as name, AES_DECRYPT(specialization,SHA2("'+key+'",'+type+')) as specialization,'+
             'prof.description, prof.price FROM Doctor doc JOIN ProfileDoctor prof on idDoctor = doctor_id '+
             'JOIN User on doc.user_CPF = CPF WHERE idProfile = ?',
             [req.params.id],

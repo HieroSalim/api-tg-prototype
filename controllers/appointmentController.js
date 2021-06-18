@@ -191,8 +191,8 @@ exports.solicitations = (req, res, next) => {
         const key = process.env.ENCRYPT_KEY
         const type = process.env.ENCRYPT_TYPE
         conn.query(
-            'SELECT idAppointment, aes_decrypt(User.name, SHA2("'+key+'",'+type+')) as name, aes_decrypt(description, SHA2("'+key+'",'+type+')) as description,'+
-            'dateHour, statusDoctor from Appointment join Doctor doc on idDoctor = doctors join User on doc.user_CPF = User.CPF '+
+            'SELECT idAppointment, aes_decrypt((select User.name from User WHERE User.CPF = doc.user_CPF),SHA2("'+key+'",'+type+')) as name, aes_decrypt(description, SHA2("'+key+'",'+type+')) as description,'+
+            'dateHour, statusDoctor from Appointment app join Doctor doc on idDoctor = doctors join User on app.user_CPF = User.CPF '+
             'WHERE statusDoctor = 0 and User.user = aes_encrypt(?, SHA2("'+key+'",'+type+'))',
             [req.params.user],
             (error, resultado, field) => {
@@ -227,8 +227,9 @@ exports.appointments = (req, res, next) => {
         const key = process.env.ENCRYPT_KEY
         const type = process.env.ENCRYPT_TYPE
         conn.query(
-            'SELECT idAppointment, aes_decrypt(User.name, SHA2("'+key+'",'+type+')) as name, aes_decrypt(description, SHA2("'+key+'",'+type+')) as description,'+
-            'dateHour, doctors, statusDoctor from Appointment join Doctor doc on idDoctor = doctors join User on doc.user_CPF = User.CPF '+
+            'SELECT idAppointment, aes_decrypt((select User.name from User WHERE User.CPF = doc.user_CPF),SHA2("'+key+'",'+type+')) as nameDoctor,'+
+            ' aes_decrypt((select User.name from User WHERE User.CPF = app.user_CPF),SHA2("'+key+'",'+type+')) as nameClient, aes_decrypt(description, SHA2("'+key+'",'+type+')) as description,'+
+            'dateHour, doctors, statusDoctor from Appointment app join Doctor doc on idDoctor = doctors join User on app.user_CPF = User.CPF '+
             'WHERE statusDoctor = 1 and User.user = aes_encrypt(?, SHA2("'+key+'",'+type+'))',
             [req.params.user],
             (error, resultado, field) => {
@@ -239,9 +240,10 @@ exports.appointments = (req, res, next) => {
                     resultado.forEach(dado => {
                         data.push( {
                             idAppointment: dado.idAppointment,
-                            name: dado.name.toString(),
+                            nameDoctor: dado.nameDoctor.toString(),
+                            nameClient: dado.nameClient.toString(),
                             description: dado.description.toString(),
-                            dateHour: dado.dateHour,
+                            dateHour: dado.dateHour.toLocaleString(),
                             statusDoctor: dado.statusDoctor
                         })
                     });
@@ -280,7 +282,7 @@ exports.consults = (req, res, next) => {
                             name: dado.name.toString(),
                             street: dado.street.toString(),
                             description: dado.description.toString(),
-                            dateHour: dado.dateHour,
+                            dateHour: dado.dateHour.toLocaleString(),
                             statusDoctor: dado.statusDoctor
                         })
                     });
@@ -303,9 +305,9 @@ exports.medicSolicitations = (req, res, next) => {
         const key = process.env.ENCRYPT_KEY
         const type = process.env.ENCRYPT_TYPE
         conn.query(
-            'SELECT idAppointment, aes_decrypt(User.name, SHA2("'+key+'",'+type+')) as name, aes_decrypt(description, SHA2("'+key+'",'+type+')) as description,'+
-            'dateHour, doctors, statusDoctor from Appointment app join Doctor doc on idDoctor = doctors join User on app.user_CPF = User.CPF '+
-            'WHERE statusDoctor = 1 and User.user = aes_encrypt(?, SHA2("'+key+'",'+type+'))',
+            'SELECT idAppointment, idDoctor, aes_decrypt((select User.name from User WHERE User.CPF = app.user_CPF),SHA2("'+key+'",'+type+')) as name, aes_decrypt(description, SHA2("'+key+'",'+type+')) as description,'+
+            'aes_decrypt(street,SHA2("'+key+'",'+type+')) as street,dateHour, doctors, statusDoctor from Appointment app join Doctor doc on idDoctor = doctors join User on doc.user_CPF = User.CPF join Address on idAddress = app.fkAddress '+
+            'WHERE statusDoctor = 0 and User.user = aes_encrypt(?, SHA2("'+key+'",'+type+'))',
             [req.params.user],
             (error, resultado, field) => {
                 conn.release()
@@ -315,9 +317,11 @@ exports.medicSolicitations = (req, res, next) => {
                     resultado.forEach(dado => {
                         data.push( {
                             idAppointment: dado.idAppointment,
+                            idDoctor: dado.idDoctor,
                             name: dado.name.toString(),
                             description: dado.description.toString(),
-                            dateHour: dado.dateHour,
+                            dateHour: dado.dateHour.toLocaleString(),
+                            street: dado.street.toString(),
                             statusDoctor: dado.statusDoctor
                         })
                     });
@@ -326,7 +330,7 @@ exports.medicSolicitations = (req, res, next) => {
                     })
                 }else{
                     res.status(404).send({
-                        mensagem: 'Nenhum agendamento realizado'
+                        mensagem: 'Nenhuma solicitação pendente'
                     });
                 }
             }
