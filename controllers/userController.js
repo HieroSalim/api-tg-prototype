@@ -174,3 +174,38 @@ exports.delete = (req, res, next) => {
         )
     });
 }
+
+exports.chatUsers = (req, res, next) => {
+    mysql.getConnection((err, conn) => {
+    if (err) return res.status(500).send({error : err})
+        const key = process.env.ENCRYPT_KEY
+        const type = process.env.ENCRYPT_TYPE
+        conn.query(
+            `SELECT distinct aes_decrypt((select User.user from User WHERE User.CPF = doc.user_CPF),SHA2("`+key+`",`+type+`)) as userDoctor,
+            aes_decrypt((select User.user from User WHERE User.CPF = app.user_CPF),SHA2("`+key+`",`+type+`)) as userClient
+            from User join appointment app on app.user_CPF = user_CPF join Doctor doc on idDoctor = app.doctors 
+            WHERE statusDoctor = 1 and (app.user_CPF = User.CPF or doc.user_CPF = User.CPF) and User.user = aes_encrypt(?, SHA2("`+key+`",`+type+`));`,
+            [req.params.user],
+            (error, resultado) => {
+                conn.release()
+                if(error) return res.status(500).send({ error: error })
+                else if (resultado.length > 0){
+                    var data = []
+                    resultado.forEach(dado => {
+                        data.push( {
+                            userClient: dado.userClient.toString(),
+                            userDoctor: dado.userDoctor.toString()
+                        })
+                    });
+                    return res.status(200).send({
+                        dados: data
+                    })
+                }else{
+                    res.status(404).send({
+                        mensagem: 'Nenhum Chat Disponível'
+                    });
+                }
+            }
+        )
+    })
+}

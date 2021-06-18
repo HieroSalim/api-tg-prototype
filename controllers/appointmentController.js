@@ -150,13 +150,13 @@ exports.delete = (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if (error) { return res.status(500).send({error : error})}
         conn.query(
-            `DElETE FROM Appointment WHERE idAppointment = ?`, [req.body.idAppointment],
+            `DElETE FROM Appointment WHERE idAppointment = ?`, [req.params.idAppointment],
             (error, resultado, field) =>{
                 conn.release();
                 if(error) { return res.status(500).send({error : error})}
 
                 res.status(200).send({
-                    mensagem: 'Agendamento excluído!'
+                    mensagem: 'Agendamento Recusado!'
                 });
             }
         )
@@ -191,7 +191,7 @@ exports.solicitations = (req, res, next) => {
         const key = process.env.ENCRYPT_KEY
         const type = process.env.ENCRYPT_TYPE
         conn.query(
-            'SELECT idAppointment, aes_decrypt((select User.name from User WHERE User.CPF = doc.user_CPF),SHA2("'+key+'",'+type+')) as name, aes_decrypt(description, SHA2("'+key+'",'+type+')) as description,'+
+            'SELECT idAppointment, idDoctor, aes_decrypt((select User.name from User WHERE User.CPF = doc.user_CPF),SHA2("'+key+'",'+type+')) as nameDoctor, aes_decrypt(description, SHA2("'+key+'",'+type+')) as description,'+
             'dateHour, statusDoctor from Appointment app join Doctor doc on idDoctor = doctors join User on app.user_CPF = User.CPF '+
             'WHERE statusDoctor = 0 and User.user = aes_encrypt(?, SHA2("'+key+'",'+type+'))',
             [req.params.user],
@@ -203,7 +203,8 @@ exports.solicitations = (req, res, next) => {
                     resultado.forEach(dado => {
                         data.push( {
                             idAppointment: dado.idAppointment,
-                            name: dado.name.toString(),
+                            idDoctor: dado.idDoctor,
+                            nameDoctor: dado.nameDoctor.toString(),
                             description: dado.description.toString(),
                             dateHour: dado.dateHour.toLocaleString(),
                             statusDoctor: dado.statusDoctor
@@ -227,10 +228,10 @@ exports.appointments = (req, res, next) => {
         const key = process.env.ENCRYPT_KEY
         const type = process.env.ENCRYPT_TYPE
         conn.query(
-            'SELECT idAppointment, aes_decrypt((select User.name from User WHERE User.CPF = doc.user_CPF),SHA2("'+key+'",'+type+')) as nameDoctor,'+
+            'SELECT idAppointment, idDoctor, (select idConsult from consult where appointment_id = idAppointment) as action, aes_decrypt((select User.name from User WHERE User.CPF = doc.user_CPF),SHA2("'+key+'",'+type+')) as nameDoctor,'+
             ' aes_decrypt((select User.name from User WHERE User.CPF = app.user_CPF),SHA2("'+key+'",'+type+')) as nameClient, aes_decrypt(description, SHA2("'+key+'",'+type+')) as description,'+
             'dateHour, doctors, statusDoctor from Appointment app join Doctor doc on idDoctor = doctors join User on app.user_CPF = User.CPF '+
-            'WHERE statusDoctor = 1 and User.user = aes_encrypt(?, SHA2("'+key+'",'+type+'))',
+            'WHERE statusDoctor = 1 and User.user = aes_encrypt(?, SHA2("'+key+'",'+type+')) and idAppointment not in (select appointment_id from consult where doctor_id = idDoctor and dateFinish)',
             [req.params.user],
             (error, resultado, field) => {
                 conn.release()
@@ -240,11 +241,13 @@ exports.appointments = (req, res, next) => {
                     resultado.forEach(dado => {
                         data.push( {
                             idAppointment: dado.idAppointment,
+                            idDoctor: dado.idDoctor,
                             nameDoctor: dado.nameDoctor.toString(),
                             nameClient: dado.nameClient.toString(),
                             description: dado.description.toString(),
                             dateHour: dado.dateHour.toLocaleString(),
-                            statusDoctor: dado.statusDoctor
+                            statusDoctor: dado.statusDoctor,
+                            action: (dado.action != null) ? "Terminar" : null
                         })
                     });
                     return res.status(200).send({
@@ -266,9 +269,10 @@ exports.consults = (req, res, next) => {
         const key = process.env.ENCRYPT_KEY
         const type = process.env.ENCRYPT_TYPE
         conn.query(
-            'SELECT idAppointment, aes_decrypt(User.name, SHA2("'+key+'",'+type+')) as name, aes_decrypt(description, SHA2("'+key+'",'+type+')) as description,'+
-            'dateHour, doctors, statusDoctor, dateStart, dateFinish, aes_decrypt(address.street, SHA2("'+key+'",'+type+')) as street from Appointment app join Doctor doc on idDoctor = doctors join User on app.user_CPF = User.CPF '+
-            'join consult on appointment_id = idAppointment join address on idAddress = app.fkAddress WHERE statusDoctor = 1 and User.user = aes_encrypt(?, SHA2("'+key+'",'+type+'))',
+            'SELECT idAppointment, idDoctor, aes_decrypt((select User.name from User WHERE User.CPF = doc.user_CPF),SHA2("'+key+'",'+type+')) as nameDoctor,'+
+            ' aes_decrypt((select User.name from User WHERE User.CPF = app.user_CPF),SHA2("'+key+'",'+type+')) as nameClient, aes_decrypt(description, SHA2("'+key+'",'+type+')) as description,'+
+            'dateHour, statusDoctor, dateStart, dateFinish, aes_decrypt(address.street, SHA2("'+key+'",'+type+')) as street from Appointment app join Doctor doc on idDoctor = doctors join User on app.user_CPF = User.CPF '+
+            'join consult on appointment_id = idAppointment join address on idAddress = app.fkAddress WHERE statusDoctor = 1 and User.user = aes_encrypt(?, SHA2("'+key+'",'+type+')) and dateFinish',
             [req.params.user],
             (error, resultado, field) => {
                 conn.release()
@@ -278,8 +282,9 @@ exports.consults = (req, res, next) => {
                     resultado.forEach(dado => {
                         data.push( {
                             idAppointment: dado.idAppointment,
-                            idDoctor: dado.doctors.parseInt(),
-                            name: dado.name.toString(),
+                            idDoctor: dado.idDoctor,
+                            nameDoctor: dado.nameDoctor.toString(),
+                            nameClient: dado.nameClient.toString(),
                             street: dado.street.toString(),
                             description: dado.description.toString(),
                             dateHour: dado.dateHour.toLocaleString(),
@@ -292,6 +297,47 @@ exports.consults = (req, res, next) => {
                 }else{
                     res.status(404).send({
                         mensagem: 'Nenhuma consulta realizada'
+                    });
+                }
+            }
+        )
+    })
+}
+
+exports.medicAppointments = (req, res, next) => {
+    mysql.getConnection((err, conn) => {
+        if(err) return res.status(500).send({ error: err })
+        const key = process.env.ENCRYPT_KEY
+        const type = process.env.ENCRYPT_TYPE
+        conn.query(
+            `SELECT idAppointment, idDoctor, aes_decrypt((select User.name from User WHERE User.CPF = doc.user_CPF),SHA2("`+key+`",`+type+`)) as nameDoctor,
+             aes_decrypt((select User.name from User WHERE User.CPF = app.user_CPF),SHA2("`+key+`",`+type+`)) as nameClient, aes_decrypt(description, SHA2("`+key+`",`+type+`)) as description,
+             dateHour, doctors, statusDoctor from Appointment app join Doctor doc on idDoctor = doctors join User on doc.user_CPF = User.CPF 
+             WHERE statusDoctor = 1 and User.user = aes_encrypt(?, SHA2("`+key+`",`+type+`)) and idAppointment not in (select appointment_id from consult where doctor_id = idDoctor);`,
+            [req.params.user],
+            (error, resultado) => {
+                conn.release()
+                if(error) return res.status(500).send({ error: error })
+                else if(resultado.length > 0){
+                    var data = []
+                    resultado.forEach(dado => {
+                        data.push( {
+                            idAppointment: dado.idAppointment,
+                            idDoctor: dado.idDoctor,
+                            nameDoctor: dado.nameDoctor.toString(),
+                            nameClient: dado.nameClient.toString(),
+                            description: dado.description.toString(),
+                            dateHour: dado.dateHour.toLocaleString(),
+                            statusDoctor: dado.statusDoctor,
+                            action: "Começar"
+                        })
+                    });
+                    return res.status(200).send({
+                        dados: data
+                    })
+                }else{
+                    res.status(404).send({
+                        mensagem: 'Nenhuma consulta pendente'
                     });
                 }
             }
@@ -333,6 +379,49 @@ exports.medicSolicitations = (req, res, next) => {
                         mensagem: 'Nenhuma solicitação pendente'
                     });
                 }
+            }
+        )
+    })
+}
+
+exports.start = (req, res, next) => {
+    mysql.getConnection((err, conn) => {
+        if (err) return res.status(500).send({ error: err })
+        const key = process.env.ENCRYPT_KEY
+        const type = process.env.ENCRYPT_TYPE
+        conn.query(
+            `INSERT INTO Consult (doctor_id, appointment_id, dateStart)
+            values (?,?,?);`,
+            [req.body.idDoctor, req.body.idAppointment, req.body.dateStart],
+            (error, resultado) => {
+                conn.release()
+                if(error) return res.status(500).send({ error: error })
+                res.status(201).send({
+                        mensagem: "A consulta Começou"
+                })
+            }
+        )
+    })
+}
+
+exports.finish = (req, res, next) => {
+    mysql.getConnection((err, conn) => {
+        if (err) return res.status(500).send({ error: err })
+        const key = process.env.ENCRYPT_KEY
+        const type = process.env.ENCRYPT_TYPE
+        console.log(req.body.dateFinish)
+        console.log(req.body.idAppointment)
+        conn.query(
+            `UPDATE Consult
+                SET dateFinish = ?
+             WHERE appointment_id = ?`,
+            [req.body.dateFinish, req.body.idAppointment],
+            (error, resultado) => {
+                conn.release()
+                if(error) return res.status(500).send({ error: error })
+                res.status(201).send({
+                        mensagem: "A consulta Terminou"
+                })
             }
         )
     })

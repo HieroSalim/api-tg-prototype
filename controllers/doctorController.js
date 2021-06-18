@@ -9,7 +9,7 @@ exports.searchDoctorsOn = (req, res, next) => {
             'SELECT idDoctor, idProfile, AES_DECRYPT(name,SHA2("'+key+'",'+type+')) as name, doc.typeProfessional, AES_DECRYPT(doc.professionalId,SHA2("'+key+'",'+type+')) as professionalId'+
             ', AES_DECRYPT(doc.specialization,SHA2("'+key+'",'+type+')) as specialization, prof.description, prof.price '+
             'FROM Doctor doc JOIN ProfileDoctor prof on idDoctor = doctor_id JOIN User on doc.user_CPF = CPF '+
-            'WHERE doc.idDoctor NOT IN (SELECT DISTINCT user_CPF from Appointment WHERE dateHour = ?) '+
+            'WHERE doc.idDoctor NOT IN (SELECT DISTINCT doctors from Appointment WHERE dateHour = ?) '+
             'AND doc.typeProfessional = ?',
             [req.params.dateHour, req.params.type],
             (erro, results) => {
@@ -180,8 +180,8 @@ exports.defineMedic = (req, res, next) => {
                             if(result && req.body.status == 1){
                                 conn.query(
                                     `UPDATE User
-                                        SET typeUser = ?`,
-                                    ['Médico'],
+                                        SET typeUser = ? WHERE CPF = AES_ENCRYPT(?,SHA2("`+key+`",`+type+`))`,
+                                    ['Médico', req.body.CPF],
                                     (erro, resultado) => {
                                         if(erro) { 
                                             conn.rollback()

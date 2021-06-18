@@ -13,6 +13,9 @@ router.get('/:user', jwt, UserController.getUnique);
 //Busca um cpf específico
 router.get('/CPF/:user', jwt, UserController.getCPF);
 
+//Seleciona o usuário e o médico que possuem ligação a um agendamento
+router.get('/chat/:user', jwt, UserController.chatUsers);
+
 //Cadastra um user
 router.post('/', UserController.register);
 
